@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.1
-Release: 1
+Release: 2
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -13,7 +13,7 @@ Source4: certwatch.xml
 Group: Applications/System
 License: Various
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
-BuildRequires: openssl-devel, perl, pkgconfig
+BuildRequires: openssl-devel, perl, pkgconfig, newt-devel, xmlto
 Requires: newt-perl, openssl
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Obsoletes: crypto-rand
@@ -95,6 +95,9 @@ sed -e "s|^\$bindir.*$|\$bindir = \"/usr/bin\";|" \
 %{_mandir}/man1/certwatch.1*
 
 %changelog
+* Wed Oct  6 2004 Joe Orton <jorton@redhat.com> 2.1-2
+- add BuildRequire newt-devel, xmlto (#134695)
+
 * Fri Sep 10 2004 Joe Orton <jorton@redhat.com> 2.1-1
 - add /usr/bin/certwatch
 - support --days argument to genkey (#131045)
