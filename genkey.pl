@@ -1,6 +1,6 @@
 #!%INSTDIR%/bin/perl
 #
-# Copyright (c) 2001-2004 Red Hat, Inc. All rights reserved.
+# Copyright (c) 2001-2005 Red Hat, Inc. All rights reserved.
 #
 # This software may be freely redistributed under the terms of the
 # GNU General Public License.
@@ -43,7 +43,7 @@ sub InitRoot
 
     Newt::Cls();
     Newt::DrawRootText(0, 0, 
-		       "Red Hat Keypair Generation (c) 2004 Red Hat, Inc.");
+		       "Red Hat Keypair Generation (c) 2005 Red Hat, Inc.");
 
     if ($help == 1) {
 	Newt::PushHelpLine("  <Tab>/<Alt-Tab> between elements  |" .

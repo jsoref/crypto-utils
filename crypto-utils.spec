@@ -4,12 +4,13 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.1
-Release: 4
+Release: 5
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
 Source3: certwatch.cron
 Source4: certwatch.xml
+Source5: genkey.xml
 Group: Applications/System
 License: Various
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
@@ -31,7 +32,9 @@ make
 
 cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/openssl -o certwatch \
    $RPM_SOURCE_DIR/certwatch.c -lcrypto
-xmlto man $RPM_SOURCE_DIR/certwatch.xml
+for m in certwatch.xml genkey.xml; do
+  xmlto man $RPM_SOURCE_DIR/$m
+done
 
 pushd Makerand
 perl -pi -e "s/Stronghold/Crypt/g" *
@@ -75,6 +78,8 @@ install -c -m 755 $RPM_SOURCE_DIR/certwatch.cron \
    $RPM_BUILD_ROOT%{_sysconfdir}/cron.daily/certwatch
 install -c -m 644 certwatch.1 \
    $RPM_BUILD_ROOT%{_mandir}/man1/certwatch.1
+install -c -m 644 genkey.1 \
+   $RPM_BUILD_ROOT%{_mandir}/man1/genkey.1
 
 # install genkey
 sed -e "s|^\$bindir.*$|\$bindir = \"/usr/bin\";|" \
@@ -91,10 +96,15 @@ sed -e "s|^\$bindir.*$|\$bindir = \"/usr/bin\";|" \
 %files -f filelist
 %defattr(0644,root,root,0755)
 %attr(0755,root,root) %{_bindir}/*
-%{_sysconfdir}/cron.daily/certwatch
-%{_mandir}/man1/certwatch.1*
+%attr(0755,root,root) %{_sysconfdir}/cron.daily/certwatch
+%{_mandir}/man1/*.1*
 
 %changelog
+* Tue Feb 15 2005 Joe Orton <jorton@redhat.com> 2.1-5
+- certwatch: prevent warnings for duplicate certs (#103807)
+- make /etc/cron.daily/certwatch 0755 (#141003)
+- add genkey(1) man page (#134821)
+
 * Tue Oct 19 2004 Joe Orton <jorton@redhat.com> 2.1-4
 - make certwatch(1) warning distro-neutral
 - update to crypto-rand 1.1, fixing #136093
