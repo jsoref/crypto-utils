@@ -101,8 +101,7 @@ static int warning(FILE *out, const char *filename, const char *hostname,
 
     if (renew) {
         fputs("  The certificate needs to be renewed; this can be done\n"
-              "  using the 'genkey' program supplied with Red Hat\n"
-              "  Enterprise Linux.\n\n"
+              "  using the 'genkey' program.\n\n"
               "  Browsers will not be able to correctly connect to this\n"
               "  web site using SSL until the certificate is renewed.\n",
               out);

@@ -1,5 +1,5 @@
 
-%define crver 1.0
+%define crver 1.1
 
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
@@ -26,7 +26,7 @@ SSL certificates and keys.
 %setup -q -n crypto-rand-%{crver}
 
 %build 
-%configure --with-newt=%{_prefix} CFLAGS="-fPIC $RPM_OPT_FLAGS"
+%configure --with-newt=%{_prefix} CFLAGS="-fPIC $RPM_OPT_FLAGS -Wall"
 make
 
 cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/openssl -o certwatch \
@@ -95,6 +95,10 @@ sed -e "s|^\$bindir.*$|\$bindir = \"/usr/bin\";|" \
 %{_mandir}/man1/certwatch.1*
 
 %changelog
+* Tue Oct 19 2004 Joe Orton <jorton@redhat.com> 2.1-3
+- make certwatch(1) warning distro-neutral
+- update to crypto-rand 1.1, fixing #136093
+
 * Wed Oct 13 2004 Joe Orton <jorton@redhat.com> 2.1-3
 - send warnings To: root rather than root@localhost (#135533)
 
