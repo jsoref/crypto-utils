@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.1
-Release: 2
+Release: 3
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -95,6 +95,9 @@ sed -e "s|^\$bindir.*$|\$bindir = \"/usr/bin\";|" \
 %{_mandir}/man1/certwatch.1*
 
 %changelog
+* Wed Oct 13 2004 Joe Orton <jorton@redhat.com> 2.1-3
+- send warnings To: root rather than root@localhost (#135533)
+
 * Wed Oct  6 2004 Joe Orton <jorton@redhat.com> 2.1-2
 - add BuildRequire newt-devel, xmlto (#134695)
 

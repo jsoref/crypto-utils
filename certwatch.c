@@ -90,7 +90,7 @@ static int warning(FILE *out, const char *filename, const char *hostname,
 
     if (quiet) return 1;
 
-    fputs("To: root@localhost\n", out);
+    fputs("To: root\n", out);
     fprintf(out, "Subject: The certificate for %s %s\n", hostname, subj);
     fputs("\n", out);
     
