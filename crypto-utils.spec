@@ -3,14 +3,17 @@
 
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
-Version: 2.0
-Release: 6
+Version: 2.1
+Release: 1
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
+Source2: certwatch.c
+Source3: certwatch.cron
+Source4: certwatch.xml
 Group: Applications/System
 License: Various
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
-BuildPreReq: openssl-devel, perl
+BuildRequires: openssl-devel, perl, pkgconfig
 Requires: newt-perl, openssl
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Obsoletes: crypto-rand
@@ -23,8 +26,12 @@ SSL certificates and keys.
 %setup -q -n crypto-rand-%{crver}
 
 %build 
-%configure --with-newt=%{_prefix} CFLAGS="-fPIC"
+%configure --with-newt=%{_prefix} CFLAGS="-fPIC $RPM_OPT_FLAGS"
 make
+
+cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/openssl -o certwatch \
+   $RPM_SOURCE_DIR/certwatch.c -lcrypto
+xmlto man $RPM_SOURCE_DIR/certwatch.xml
 
 pushd Makerand
 perl -pi -e "s/Stronghold/Crypt/g" *
@@ -33,6 +40,7 @@ make
 popd
 
 %install
+rm -rf $RPM_BUILD_ROOT
 
 pushd Makerand
 make install
@@ -51,12 +59,22 @@ find $RPM_BUILD_ROOT/usr -type f -print |
 	grep -v "\.packlist" > filelist
 if [ ! -s filelist ] ; then
     echo "ERROR: EMPTY FILE LIST"
-    exit -1
+    exit 1
 fi
 
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/cron.daily \
+         $RPM_BUILD_ROOT%{_mandir}/man1 \
+         $RPM_BUILD_ROOT%{_bindir}
+
 # install keyrand
-%{__mkdir_p} $RPM_BUILD_ROOT%{_bindir}
-install -m 755 keyrand/keyrand $RPM_BUILD_ROOT%{_bindir}/keyrand
+install -c -m 755 keyrand/keyrand $RPM_BUILD_ROOT%{_bindir}/keyrand
+
+# install certwatch
+install -c -m 755 certwatch $RPM_BUILD_ROOT%{_bindir}/certwatch
+install -c -m 755 $RPM_SOURCE_DIR/certwatch.cron \
+   $RPM_BUILD_ROOT%{_sysconfdir}/cron.daily/certwatch
+install -c -m 644 certwatch.1 \
+   $RPM_BUILD_ROOT%{_mandir}/man1/certwatch.1
 
 # install genkey
 sed -e "s|^\$bindir.*$|\$bindir = \"/usr/bin\";|" \
@@ -73,8 +91,14 @@ sed -e "s|^\$bindir.*$|\$bindir = \"/usr/bin\";|" \
 %files -f filelist
 %defattr(0644,root,root,0755)
 %attr(0755,root,root) %{_bindir}/*
+%{_sysconfdir}/cron.daily/certwatch
+%{_mandir}/man1/certwatch.1*
 
 %changelog
+* Fri Sep 10 2004 Joe Orton <jorton@redhat.com> 2.1-1
+- add /usr/bin/certwatch
+- support --days argument to genkey (#131045)
+
 * Tue Aug 17 2004 Joe Orton <jorton@redhat.com> 2.0-6
 - add perl MODULE_COMPAT requirement
 

@@ -25,6 +25,7 @@
 # 200305 Hide passwords entered for private key
 # 200308 Adapted for Taroon
 # 200308 Fix warnings in UTF-8 locale
+# 200409 Added --days support
 #
 #
 $bindir = "%INSTDIR%/bin";
@@ -64,6 +65,7 @@ Usage: genkey [options] servername
     --test   Test mode, skip random data creation, overwrite existing key
     --genreq Just generate a CSR from an existing key
     --makeca Generate a private CA key instead
+    --days   Days until expiry of self-signed certificate (default 30)
 EOH
     exit 1;
 }
@@ -109,8 +111,10 @@ sub RunForm
 my $test_mode = '';
 my $genreq_mode = '';
 my $ca_mode = '';
+my $cert_days = 30;
 GetOptions('test|t' => \$test_mode, 
 	   'genreq' => \$genreq_mode,
+           'days=i' => \$cert_days,
 	   'makeca' => \$ca_mode) or usage();
 usage() unless @ARGV != 0;
 $skip_random = $test_mode;
@@ -877,7 +881,7 @@ sub genReqWindow
 
     if (!$genreq_mode) {
 	if (!-f $certfile) {
-	    makeCert($keyfile,$certfile,$cadetails,"-days 30 -x509");
+	    makeCert($keyfile,$certfile,$cadetails,"-days $cert_days -x509");
 	}
     }
     
@@ -981,7 +985,7 @@ sub genCertWindow
     my $ret = getCertDetails($servername,$msg, 0);
     return $ret unless ($ret eq "Next");
 
-    makeCert($keyfile,$certfile,$cadetails,"-days 30 -x509");
+    makeCert($keyfile,$certfile,$cadetails,"-days $cert_days -x509");
 
     return "Next";
 }
