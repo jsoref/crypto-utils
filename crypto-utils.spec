@@ -4,14 +4,15 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.0
-Release: 5
+Release: 6
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Group: Applications/System
 License: Various
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildPreReq: openssl-devel, perl
-Requires: perl, newt-perl, openssl
+Requires: newt-perl, openssl
+Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Obsoletes: crypto-rand
 
 %description
@@ -74,6 +75,9 @@ sed -e "s|^\$bindir.*$|\$bindir = \"/usr/bin\";|" \
 %attr(0755,root,root) %{_bindir}/*
 
 %changelog
+* Tue Aug 17 2004 Joe Orton <jorton@redhat.com> 2.0-6
+- add perl MODULE_COMPAT requirement
+
 * Mon Aug 16 2004 Joe Orton <jorton@redhat.com> 2.0-5
 - rebuild
 
