@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.1
-Release: 3
+Release: 4
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -95,7 +95,7 @@ sed -e "s|^\$bindir.*$|\$bindir = \"/usr/bin\";|" \
 %{_mandir}/man1/certwatch.1*
 
 %changelog
-* Tue Oct 19 2004 Joe Orton <jorton@redhat.com> 2.1-3
+* Tue Oct 19 2004 Joe Orton <jorton@redhat.com> 2.1-4
 - make certwatch(1) warning distro-neutral
 - update to crypto-rand 1.1, fixing #136093
 
