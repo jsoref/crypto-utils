@@ -3,8 +3,7 @@
 Summary: Stronghold key management utilities
 Name: crypto-utils
 Version: 1.0
-Release: 12
-Vendor: Red Hat, Inc.
+Release: 13
 Source: crypto-utils.tar.gz
 Source1: genkey-extra.pl
 Source2: stronghold-config.pl
@@ -71,6 +70,9 @@ cp %{SOURCE2} $RPM_BUILD_ROOT/usr/bin/stronghold-config
 %attr(0755,root,root) /usr/bin/*
 
 %changelog
+* Tue Mar 18 2003 Joe Orton <jorton@redhat.com> 1.0-13
+- hide passwords entered for private key
+
 * Wed Sep 11 2002 Joe Orton <jorton@redhat.com> 1.0-12
 - rebuild
 
