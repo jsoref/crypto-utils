@@ -27,6 +27,8 @@
 
 */
 
+/* $Id$ */
+
 /* Certificate expiry warning generation code, based on code from
  * Stronghold.  Joe Orton <jorton@redhat.com> */
 
