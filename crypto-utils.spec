@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.1
-Release: 5
+Release: 6
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -100,6 +100,9 @@ sed -e "s|^\$bindir.*$|\$bindir = \"/usr/bin\";|" \
 %{_mandir}/man1/*.1*
 
 %changelog
+* Fri Mar  4 2005 Joe Orton <jorton@redhat.com> 2.1-6
+- rebuild
+
 * Tue Feb 15 2005 Joe Orton <jorton@redhat.com> 2.1-5
 - certwatch: prevent warnings for duplicate certs (#103807)
 - make /etc/cron.daily/certwatch 0755 (#141003)
