@@ -1,77 +1,94 @@
-# The maintainer of this package is Mark Cox <mjc@redhat.com>
 
-Summary: Stronghold key management utilities
+%define crver 1.0
+
+Summary: SSL certificate and key management utilities
 Name: crypto-utils
-Version: 1.0
-Release: 13
-Source: crypto-utils.tar.gz
-Source1: genkey-extra.pl
-Source2: stronghold-config.pl
+Version: 2.0
+Release: 5
+Source: crypto-rand-%{crver}.tar.gz
+Source1: genkey.pl
 Group: Applications/System
 License: Various
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildPreReq: openssl-devel, perl
-Requires: perl, crypto-rand, newt-perl
+Requires: perl, newt-perl, openssl
+Obsoletes: crypto-rand
 
 %description
-Provides tools and programs based on the OpenSSL
-cryptographic library needed for Stronghold.
+This package provides tools for managing and generating
+SSL certificates and keys.
 
 %prep
-%setup -q -n crypto-utils
+%setup -q -n crypto-rand-%{crver}
 
 %build 
-[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
+%configure --with-newt=%{_prefix} CFLAGS="-fPIC"
+make
 
-# Pick up any extra flags we might need to build code which is
-# used in a shared library.
-env CFLAGS="`perl -e 'print $Config{cccdlflags}'`" \
-./configure --with-ssl=/usr
-
-# build impkey
-(cd impkey && make) || exit 1
-
-%install
-%{__mkdir_p} $RPM_BUILD_ROOT/usr/bin/
-
-pushd impkey
-make install INSTDIR="$RPM_BUILD_ROOT/usr/bin/"
+pushd Makerand
+perl -pi -e "s/Stronghold/Crypt/g" *
+CFLAGS="$RPM_OPT_FLAGS" perl Makefile.PL PREFIX=$RPM_BUILD_ROOT/usr INSTALLDIRS=vendor
+make
 popd
 
+%install
+
+pushd Makerand
+make install
+popd
+
+# fix Newt.so perms
+find $RPM_BUILD_ROOT/usr -name Makerand.so | xargs chmod 755
+
+[ -x /usr/lib/rpm/brp-compress ] && /usr/lib/rpm/brp-compress
+
+find $RPM_BUILD_ROOT \( -name perllocal.pod -o -name .packlist \) -exec rm -v {} \;
+
+find $RPM_BUILD_ROOT/usr -type f -print | 
+	sed "s@^$RPM_BUILD_ROOT@@g" | 
+	grep -v perllocal.pod | 
+	grep -v "\.packlist" > filelist
+if [ ! -s filelist ] ; then
+    echo "ERROR: EMPTY FILE LIST"
+    exit -1
+fi
+
+# install keyrand
+%{__mkdir_p} $RPM_BUILD_ROOT%{_bindir}
+install -m 755 keyrand/keyrand $RPM_BUILD_ROOT%{_bindir}/keyrand
+
+# install genkey
 sed -e "s|^\$bindir.*$|\$bindir = \"/usr/bin\";|" \
     -e "s|^\$ssltop.*$|\$ssltop = \"/usr/share/ssl\";|" \
     -e "s|^\$sslconf.*$|\$sslconf = \"/usr/share/ssl/openssl.cnf\";|" \
     -e "1s|.*|\#\!/usr/bin/perl|g" \
-    -e "s/^.*@EXTRA@.*$/finalMessage/g" \
     -e "s/'Challenge',/'Email','Challenge',/g" \
     -e "/@EXTRA@/d" \
-    -e "\$r %{SOURCE1}" \
-  < scripts/genkey-newt.pl > $RPM_BUILD_ROOT/usr/bin/genkey
-
-scripts="getca getcert gencert change_pass decrypt_key checkcert genreq"
-
-for s in $scripts; do 
-   sed -e "s|^SSLTOP=.*$|SSLTOP=/usr/share/ssl|g" -e "s|%INSTDIR%|/usr|g" \
-       -e "s|%SERVERROOT%|/usr/share|g" \
-       -e "s|/usr/share/conf/ssl|/usr/share/ssl|g" \
-       -e "s|lib/openssl.conf|openssl.cnf|g" \
-       -e "s|/usr/share/ssl/openssl.conf|/usr/share/ssl/openssl.cnf|g" \
-       -e "/PATH/d" \
-      < scripts/$s > $RPM_BUILD_ROOT/usr/bin/$s
-done
-
-cp %{SOURCE2} $RPM_BUILD_ROOT/usr/bin/stronghold-config
+  < $RPM_SOURCE_DIR/genkey.pl > $RPM_BUILD_ROOT%{_bindir}/genkey
 
 %clean
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
 
-%files
+%files -f filelist
 %defattr(0644,root,root,0755)
-%attr(0755,root,root) /usr/bin/*
+%attr(0755,root,root) %{_bindir}/*
 
 %changelog
-* Tue Mar 18 2003 Joe Orton <jorton@redhat.com> 1.0-13
-- hide passwords entered for private key
+* Mon Aug 16 2004 Joe Orton <jorton@redhat.com> 2.0-5
+- rebuild
+
+* Mon Sep 15 2003 Joe Orton <jorton@redhat.com> 2.0-4
+- hide private key passwords during entry
+- fix CSR generation
+
+* Mon Sep  1 2003 Joe Orton <jorton@redhat.com> 2.0-3
+- fix warnings when in UTF-8 locale
+
+* Tue Aug 26 2003 Joe Orton <jorton@redhat.com> 2.0-2
+- allow upgrade from Stronghold 4.0
+
+* Mon Aug  4 2003 Joe Orton <jorton@redhat.com> 2.0-1
+- update for RHEL
 
 * Wed Sep 11 2002 Joe Orton <jorton@redhat.com> 1.0-12
 - rebuild
