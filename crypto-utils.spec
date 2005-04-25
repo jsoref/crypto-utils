@@ -3,8 +3,8 @@
 
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
-Version: 2.1
-Release: 6
+Version: 2.2
+Release: 1
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -82,9 +82,10 @@ install -c -m 644 genkey.1 \
    $RPM_BUILD_ROOT%{_mandir}/man1/genkey.1
 
 # install genkey
-sed -e "s|^\$bindir.*$|\$bindir = \"/usr/bin\";|" \
-    -e "s|^\$ssltop.*$|\$ssltop = \"/usr/share/ssl\";|" \
-    -e "s|^\$sslconf.*$|\$sslconf = \"/usr/share/ssl/openssl.cnf\";|" \
+sed -e "s|^\$bindir.*$|\$bindir = \"%{_bindir}\";|" \
+    -e "s|^\$ssltop.*$|\$ssltop = \"/etc/pki/tls\";|" \
+    -e "s|^\$sslconf.*$|\$sslconf = \"/etc/pki/tls/openssl.cnf\";|" \
+    -e "s|^\$cadir.*$|\$cadir = \"/etc/pki/CA\";|" \
     -e "1s|.*|\#\!/usr/bin/perl|g" \
     -e "s/'Challenge',/'Email','Challenge',/g" \
     -e "/@EXTRA@/d" \
@@ -100,6 +101,9 @@ sed -e "s|^\$bindir.*$|\$bindir = \"/usr/bin\";|" \
 %{_mandir}/man1/*.1*
 
 %changelog
+* Mon Apr 25 2005 Joe Orton <jorton@redhat.com> 2.2-1
+- adapt to use /etc/pki
+
 * Fri Mar  4 2005 Joe Orton <jorton@redhat.com> 2.1-6
 - rebuild
 

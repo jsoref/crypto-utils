@@ -473,10 +473,10 @@ You are now generating a new keypair which will be used for your
 private CA
 
 The key will be stored in 
-    $ssltop/CA/private/$name
+    $cadir/private/$name
 
 If the key generation fails, move the file 
-    $ssltop/CA/private/$name
+    $cadir/private/$name
 to a backup location and try again.
 EOT
 
@@ -994,8 +994,8 @@ sub genCACertWindow
 {
     return "Skip" if $useca;
 
-    $keyfile = $ssltop."/CA/private/".$servername;
-    $certfile = $ssltop."/CA/".$servername;
+    $keyfile = $cadir."/private/".$servername;
+    $certfile = $cadir."/".$servername;
     
     my $msg = "You are about to be asked to enter information that will be ".
 	"made into a certificate for your CA key. What you are ".
