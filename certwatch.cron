@@ -1,9 +1,9 @@
 #!/bin/bash
 #
 # Issue warning e-mails if SSL certificates expire, using
-# certwatch(8).  Set NOCERTWATCH=yes in /etc/sysconfig/httpd
+# certwatch(1).  Set NOCERTWATCH=yes in /etc/sysconfig/httpd
 # to disable.  Pass additional options to certwatch in the
-# CERTWATCH_OPTS variable.
+# CERTWATCH_OPTS variable; see the man page for details.
 # 
 
 [ -r /etc/sysconfig/httpd ] && . /etc/sysconfig/httpd
@@ -22,7 +22,7 @@ test -x /bin/sort || exit 0
 
 set -o pipefail # pick up exit code of httpd not sort
 
-certs=`${httpd} -t -DDUMP_CERTS 2>/dev/null | /bin/sort -u`
+certs=`${httpd} ${OPTIONS} -t -DDUMP_CERTS 2>/dev/null | /bin/sort -u`
 RETVAL=$?
 test $RETVAL -eq 0 || exit 0
 
