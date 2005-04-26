@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.2
-Release: 1
+Release: 2
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -15,7 +15,7 @@ Group: Applications/System
 License: Various
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildRequires: openssl-devel, perl, pkgconfig, newt-devel, xmlto
-Requires: newt-perl, openssl
+Requires: newt-perl, openssl >= 0.9.7f-4
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Obsoletes: crypto-rand
 
@@ -30,8 +30,8 @@ SSL certificates and keys.
 %configure --with-newt=%{_prefix} CFLAGS="-fPIC $RPM_OPT_FLAGS -Wall"
 make
 
-cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/openssl -o certwatch \
-   $RPM_SOURCE_DIR/certwatch.c -lcrypto
+%{_cc} $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/openssl \
+       $RPM_SOURCE_DIR/certwatch.c -o certwatch -lcrypto
 for m in certwatch.xml genkey.xml; do
   xmlto man $RPM_SOURCE_DIR/$m
 done
@@ -101,6 +101,11 @@ sed -e "s|^\$bindir.*$|\$bindir = \"%{_bindir}\";|" \
 %{_mandir}/man1/*.1*
 
 %changelog
+* Tue Apr 26 2005 Joe Orton <jorton@redhat.com> 2.2-2
+- add configuration options for certwatch (#152990)
+- allow passing options in certwatch.cron via $CERTWATCH_OPTS
+- require openssl with /etc/pki/tls
+
 * Mon Apr 25 2005 Joe Orton <jorton@redhat.com> 2.2-1
 - adapt to use /etc/pki
 
