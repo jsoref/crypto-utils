@@ -51,15 +51,15 @@
     <variablelist>
 
       <varlistentry>
-        <term><option>--quiet</option> or <option>-q</option></term>
+        <term><option>--quiet</option>, <option>-q</option></term>
 
         <listitem><simpara>Enable quiet mode; no output is produced
         whether the certificate is expired or not</simpara></listitem>
       </varlistentry>
 
       <varlistentry>
-        <term><option>--period <replaceable>days</replaceable></option>
-        or <option>-p <replaceable>days</replaceable></option></term>
+        <term><option>--period <replaceable>days</replaceable></option>, 
+        <option>-p <replaceable>days</replaceable></option></term>
 
         <listitem><simpara>Specify the number of days within which an
         expiry warning will be produced; default is 30.  Expiry
@@ -70,8 +70,8 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>--address <replaceable>address</replaceable></option>
-        or <option>-a <replaceable>address</replaceable></option></term>
+        <term><option>--address <replaceable>address</replaceable></option>,
+        <option>-a <replaceable>address</replaceable></option></term>
 
         <listitem><simpara>Specify the address used in the To field of
         the warning e-mail issued if quiet mode is not enabled.  The
