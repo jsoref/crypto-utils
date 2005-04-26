@@ -5,7 +5,7 @@
 
   <refentryinfo>
     <productname>crypto-utils</productname>
-    <date>September 2004</date>
+    <date>April 2005</date>
   </refentryinfo>
 
   <refmeta>
@@ -21,7 +21,7 @@
   <refsynopsisdiv>
     <cmdsynopsis>
       <command>certwatch</command>
-      <arg choice="opt"><option>-q</option></arg>
+      <arg choice="opt">OPTION...</arg>
       <arg choice="plain"><replaceable>filename</replaceable></arg>
     </cmdsynopsis>
   </refsynopsisdiv>
@@ -39,18 +39,52 @@
     outside its validity period, or approaching expiry.  If the
     certificate cannot be found, or any errors occur whilst parsing
     the certificate, the certificate is ignored and no output is
-    produced.</para>
+    produced.  In quiet mode, no output is given, but the exit status
+    can still be used.</para>
 
-    <para>In quiet mode (when the <literal>-q</literal> argument is
-    given), no output is ever produced.</para>
-    
+  </refsect1>
+
+
+  <refsect1>
+    <title>Options</title>
+
+    <variablelist>
+
+      <varlistentry>
+        <term><option>--quiet</option> or <option>-q</option></term>
+
+        <listitem><simpara>Enable quiet mode; no output is produced
+        whether the certificate is expired or not</simpara></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--period <replaceable>days</replaceable></option>
+        or <option>-p <replaceable>days</replaceable></option></term>
+
+        <listitem><simpara>Specify the number of days within which an
+        expiry warning will be produced; default is 30.  Expiry
+        warnings are always produced if, on the day of invocation, the
+        certificate is not yet valid, has already expired, or is due
+        to expire either that day or the following
+        day.</simpara></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--address <replaceable>address</replaceable></option>
+        or <option>-a <replaceable>address</replaceable></option></term>
+
+        <listitem><simpara>Specify the address used in the To field of
+        the warning e-mail issued if quiet mode is not enabled.  The
+        default is <literal>root</literal>.</simpara></listitem>
+      </varlistentry>
+
+    </variablelist>
   </refsect1>
 
   <refsect1>
     <title>Diagnostics</title>
     
-    <para>In both modes of operation, the exit code indicates the
-    state of the certificate:</para>
+    <para>The exit code indicates the state of the certificate:</para>
     
     <variablelist>
       <varlistentry>
@@ -78,7 +112,9 @@
     imminent expiry of SSL certificates configured for use in the
     Apache HTTP server.  This warning can be disabled by adding the
     line: <literal>NOCERTWATCH=yes</literal> to the file
-    <filename>/etc/sysconfig/httpd</filename>.</para>
+    <filename>/etc/sysconfig/httpd</filename>.  Options to pass to
+    certwatch can be specified in that file in the
+    <literal>CERTWATCH_OPTS</literal> environment variable.</para>
 
   </refsect1>
 
@@ -86,6 +122,12 @@
     <title>Files</title>
 
     <para><filename>/etc/cron.daily/certwatch</filename></para>
+  </refsect1>
+  
+  <refsect1>
+    <title>See also</title>
+
+    <para>genkey(1)</para>
   </refsect1>
 
 </refentry>

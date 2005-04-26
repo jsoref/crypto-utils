@@ -1,5 +1,5 @@
 /*
-   Copyright 2004 Red Hat, Inc.
+   Copyright 2005 Red Hat, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,6 +38,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <getopt.h>
+
+static int warn_period = 30;
+static char *warn_address = "root";
 
 /* Turn an ASN.1 UTCTIME object into a time_t, ish. */
 static time_t decode_utctime(const ASN1_UTCTIME *utc)
@@ -84,7 +88,7 @@ static int warning(FILE *out, const char *filename, const char *hostname,
         strcpy(subj, "will expire today");
     } else if (days == 1) {
         sprintf(subj, "will expire tomorrow");
-    } else if (days < 30) {
+    } else if (days < warn_period) {
         sprintf(subj, "will expire in %d days", days);
     } else {
         return 0; /* nothing to warn about. */
@@ -92,14 +96,17 @@ static int warning(FILE *out, const char *filename, const char *hostname,
 
     if (quiet) return 1;
 
-    fputs("To: root\n", out);
+    fprintf(out, "To: %s\n", warn_address);
     fprintf(out, "Subject: The certificate for %s %s\n", hostname, subj);
     fputs("\n", out);
     
     fprintf(out, 
             " ################# SSL Certificate Warning ################\n\n");
 
-    fprintf(out, " Certificate for %s, in '%s':\n\n", hostname, filename);
+    fprintf(out, 
+            "  Certificate for %s, in file:\n"
+            "     %s\n\n",
+            hostname, filename);
 
     if (renew) {
         fputs("  The certificate needs to be renewed; this can be done\n"
@@ -180,15 +187,29 @@ static int check_cert(const char *filename, int quiet)
 
 int main(int argc, char **argv)
 {
-    int quiet = 0;
-
-    if (argc == 3 && strcmp(argv[1], "-q") == 0) {
-        quiet = 1;
-        argc--;
-        argv++;
-    }
+    int optc, quiet = 0;
+    static const struct option options[] = {
+        { "quiet", no_argument, NULL, 'q' },
+        { "period", required_argument, NULL, 'p' },
+        { "address", required_argument, NULL, 'a' },
+        { NULL }
+    };
     
-    if (argc != 2) return 0;
+    while ((optc = getopt_long(argc, argv, "qhvp:", options, NULL)) != -1) {
+        switch (optc) {
+        case 'q':
+            quiet = 1;
+            break;
+        case 'p':
+            warn_period = atoi(optarg);
+            break;
+        case 'a':
+            warn_address = strdup(optarg);
+            break;
+        default:
+            exit(2);
+        }
+    }
 
-    return check_cert(argv[1], quiet) == 1 ? EXIT_SUCCESS : EXIT_FAILURE;
+    return check_cert(argv[optind], quiet) == 1 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
