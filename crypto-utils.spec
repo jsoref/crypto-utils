@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.2
-Release: 2
+Release: 3
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -101,6 +101,10 @@ sed -e "s|^\$bindir.*$|\$bindir = \"%{_bindir}\";|" \
 %{_mandir}/man1/*.1*
 
 %changelog
+* Tue Apr 26 2005 Joe Orton <jorton@redhat.com> 2.2-3
+- pass $OPTIONS to $HTTPD in certwatch.cron
+- man page tweaks
+
 * Tue Apr 26 2005 Joe Orton <jorton@redhat.com> 2.2-2
 - add configuration options for certwatch (#152990)
 - allow passing options in certwatch.cron via $CERTWATCH_OPTS
