@@ -30,8 +30,8 @@ SSL certificates and keys.
 %configure --with-newt=%{_prefix} CFLAGS="-fPIC $RPM_OPT_FLAGS -Wall"
 make
 
-%{_cc} $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/openssl \
-       $RPM_SOURCE_DIR/certwatch.c -o certwatch -lcrypto
+cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/openssl \
+   $RPM_SOURCE_DIR/certwatch.c -o certwatch -lcrypto
 for m in certwatch.xml genkey.xml; do
   xmlto man $RPM_SOURCE_DIR/$m
 done
