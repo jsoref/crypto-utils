@@ -149,16 +149,14 @@ if (!$genreq_mode && -f $keyfile && !$overwrite_key) {
 		"This script will not overwrite an existing key.\n" . 
 		"You will need to remove or rename this file in order to" .
 		"generate a new key for this host, then run\n" .
-		"\"genkey $servername\"\n\n" .
-		"Press return to exit");
+		"\"genkey $servername\"");
     Newt::Finished();
     exit 1;
 }
 
 if ($genreq_mode && !(-f $keyfile)) {
     Newt::newtWinMessage("Error", "Close", 
-		"You do not have a key file for this host\n\n" .
-		"Press return to exit");
+                         "You do not have a key file for this host");
     Newt::Finished();
     exit 1;
 }
@@ -599,8 +597,7 @@ EOT
 
 	if ($pass1 ne $pass2) {
 	    Newt::newtWinMessage("Error", "Close",
-			       "The passphrases you entered do not match\n\n".
-			       "Press return to try again");
+                                 "The passphrases you entered do not match.");
 	    next;
 	}
 	if (length($pass1)<4) {
@@ -617,21 +614,34 @@ EOT
 
     return $ret if ($ret eq "Back" or $ret eq "Cancel");
 
-    unlink($keyfile.".tmp");
-    if (!open (PIPE,"|$bindir/openssl rsa -des3 -in $keyfile -passout stdin -out $keyfile.tmp")) {
-        Newt:newtWinMessage("Error","Close","Unable to set passphrase".
+    my $enckey = $keyfile . ".tmp";
+
+    unlink($enckey);
+
+    if (!open (PIPE,
+               "|$bindir/openssl rsa -des3 -in $keyfile -passout stdin ".
+               "-out $enckey")) {
+        Newt::newtWinMessage("Error", "Close",
+                             "Unable to set passphrase".
 			    "\n\nPress return to continue");
 	return "Back";
     }
     print PIPE $pass1."\n";
     close(PIPE);
 
-    if (-f $keyfile.".tmp") {
-	unlink($keyfile);
-	rename($keyfile.".tmp",$keyfile);
+    if (-f $enckey) {
+	if (chmod(0400, $enckey) != 1
+            || !rename($enckey, $keyfile)) {
+            Newt::newtWinMessage("Error", "Close", 
+                                 "Could not install private key file.\n".
+                                 "$! - $enckey");
+            unlink($enckey);
+            return "Back";
+        }
     } else {
-        Newt:newtWinMessage("Error","Close","Unable to set passphrase".
-			    "\n\nPress return to continue");
+        Newt:newtWinMessage("Error", "Close",
+                            "Unable to set passphrase\n\n".
+			    "Press return to continue");
 	return "Back";
     }
     return "Next";
@@ -1042,8 +1052,15 @@ sub generateKey()
     #
     system("$bindir/openssl genrsa -rand $randfile $bits > $keyfile");
     unlink($randfile);
-
     Newt::Resume();
+
+    if (chmod(0400, $keyfile) != 1) {
+        Newt::newtWinMessage("Error", "Close",
+                             "Could not set permissions of private key file.\n".
+                             "$1 - $keyfile");
+        Newt::Finished();
+        exit 1;
+    }
+
     return "Skip";
 }
-
