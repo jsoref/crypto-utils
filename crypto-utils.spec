@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.2
-Release: 4
+Release: 5
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -101,6 +101,9 @@ sed -e "s|^\$bindir.*$|\$bindir = \"%{_bindir}\";|" \
 %{_mandir}/man1/*.1*
 
 %changelog
+* Fri May 13 2005 Joe Orton <jorton@redhat.com> 2.2-5
+- genkey(1): fix paths to use /etc/pki
+
 * Wed Apr 27 2005 Joe Orton <jorton@redhat.com> 2.2-4
 - genkey: create private key files with permissions 0400
 - genkey: tidy up error handling a little
