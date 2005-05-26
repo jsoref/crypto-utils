@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.2
-Release: 5
+Release: 6
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -101,6 +101,9 @@ sed -e "s|^\$bindir.*$|\$bindir = \"%{_bindir}\";|" \
 %{_mandir}/man1/*.1*
 
 %changelog
+* Thu May 26 2005 Joe Orton <jorton@redhat.com> 2.2-6
+- certwatch: use UTC time correctly (Tomas Mraz, #158703)
+
 * Fri May 13 2005 Joe Orton <jorton@redhat.com> 2.2-5
 - genkey(1): fix paths to use /etc/pki
 
