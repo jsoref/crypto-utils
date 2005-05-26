@@ -39,11 +39,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <time.h>
 
 static int warn_period = 30;
 static char *warn_address = "root";
 
-/* Turn an ASN.1 UTCTIME object into a time_t, ish. */
+/* Turn an ASN.1 UTCTIME object into a time_t. */
 static time_t decode_utctime(const ASN1_UTCTIME *utc)
 {
     struct tm tm = {0};
@@ -66,9 +67,8 @@ static time_t decode_utctime(const ASN1_UTCTIME *utc)
     tm.tm_hour = (utc->data[6]-'0') * 10 + (utc->data[7]-'0');
     tm.tm_min = (utc->data[8]-'0') * 10 + (utc->data[9]-'0');
     tm.tm_sec = (utc->data[10]-'0') * 10 + (utc->data[11]-'0');
-    tm.tm_isdst = -1;
 
-    return mktime(&tm);
+    return mktime(&tm) - timezone;
 }
 
 /* Print a warning message that the certificate in 'filename', issued
@@ -104,7 +104,7 @@ static int warning(FILE *out, const char *filename, const char *hostname,
             " ################# SSL Certificate Warning ################\n\n");
 
     fprintf(out, 
-            "  Certificate for %s, in file:\n"
+            "  Certificate for hostname '%s', in file:\n"
             "     %s\n\n",
             hostname, filename);
 
@@ -194,6 +194,10 @@ int main(int argc, char **argv)
         { "address", required_argument, NULL, 'a' },
         { NULL }
     };
+
+    /* The 'timezone' global is needed to adjust local times from
+     * mktime() back to UTC: */
+    tzset();
     
     while ((optc = getopt_long(argc, argv, "qhvp:", options, NULL)) != -1) {
         switch (optc) {
