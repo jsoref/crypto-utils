@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.2
-Release: 8
+Release: 9
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -101,6 +101,9 @@ sed -e "s|^\$bindir.*$|\$bindir = \"%{_bindir}\";|" \
 %{_mandir}/man1/*.1*
 
 %changelog
+* Thu Nov 24 2005 Joe Orton <jorton@redhat.com> 2.2-9
+- rebuild for new slang
+
 * Tue Nov  8 2005 Tomas Mraz <tmraz@redhat.com> - 2.2-8
 - rebuilt with new openssl
 
