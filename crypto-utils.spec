@@ -1,16 +1,17 @@
 
-%define crver 1.1
+%define crver 1.3
 
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
-Version: 2.2
-Release: 9.2.2
+Version: 2.3
+Release: 1
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
 Source3: certwatch.cron
 Source4: certwatch.xml
 Source5: genkey.xml
+Source6: keyrand.c
 Group: Applications/System
 License: Various
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
@@ -28,10 +29,14 @@ SSL certificates and keys.
 
 %build 
 %configure --with-newt=%{_prefix} CFLAGS="-fPIC $RPM_OPT_FLAGS -Wall"
-make
+make -C librand
 
 cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/openssl \
    $RPM_SOURCE_DIR/certwatch.c -o certwatch -lcrypto
+
+cc $RPM_OPT_FLAGS -Wall -Werror \
+   $RPM_SOURCE_DIR/keyrand.c -o keyrand -lnewt
+
 for m in certwatch.xml genkey.xml; do
   xmlto man $RPM_SOURCE_DIR/$m
 done
@@ -70,7 +75,7 @@ mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/cron.daily \
          $RPM_BUILD_ROOT%{_bindir}
 
 # install keyrand
-install -c -m 755 keyrand/keyrand $RPM_BUILD_ROOT%{_bindir}/keyrand
+install -c -m 755 keyrand $RPM_BUILD_ROOT%{_bindir}/keyrand
 
 # install certwatch
 install -c -m 755 certwatch $RPM_BUILD_ROOT%{_bindir}/certwatch
@@ -101,6 +106,9 @@ sed -e "s|^\$bindir.*$|\$bindir = \"%{_bindir}\";|" \
 %{_mandir}/man1/*.1*
 
 %changelog
+* Thu Aug 17 2006 Joe Orton <jorton@redhat.com> 2.3-1
+- add GPL-licensed keyrand replacement (#20254)
+
 * Wed Jul 12 2006 Jesse Keating <jkeating@redhat.com> - 2.2-9.2.2
 - rebuild
 
