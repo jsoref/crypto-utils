@@ -15,7 +15,7 @@ Source6: keyrand.c
 Group: Applications/System
 License: Various
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires: openssl-devel, perl, pkgconfig, newt-devel, xmlto, perl(Newt)
+BuildRequires: openssl-devel, perl-devel, pkgconfig, newt-devel, xmlto, perl(Newt)
 Requires: perl(Newt), openssl >= 0.9.7f-4
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Obsoletes: crypto-rand
