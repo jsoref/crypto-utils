@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.3
-Release: 1
+Release: 2
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -14,9 +14,9 @@ Source5: genkey.xml
 Source6: keyrand.c
 Group: Applications/System
 License: Various
-BuildRoot: %{_tmppath}/%{name}-%{version}-root
-BuildRequires: openssl-devel, perl, pkgconfig, newt-devel, xmlto
-Requires: newt-perl, openssl >= 0.9.7f-4
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+BuildRequires: openssl-devel, perl, pkgconfig, newt-devel, xmlto, perl(Newt)
+Requires: perl(Newt), openssl >= 0.9.7f-4
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Obsoletes: crypto-rand
 
@@ -28,7 +28,7 @@ SSL certificates and keys.
 %setup -q -n crypto-rand-%{crver}
 
 %build 
-%configure --with-newt=%{_prefix} CFLAGS="-fPIC $RPM_OPT_FLAGS -Wall"
+%configure --with-newt=%{_prefix} CFLAGS="$CFLAGS -fPIC"
 make -C librand
 
 cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/openssl \
@@ -43,7 +43,7 @@ done
 
 pushd Makerand
 perl -pi -e "s/Stronghold/Crypt/g" *
-CFLAGS="$RPM_OPT_FLAGS" perl Makefile.PL PREFIX=$RPM_BUILD_ROOT/usr INSTALLDIRS=vendor
+perl Makefile.PL PREFIX=$RPM_BUILD_ROOT/usr OPTIMIZE="$RPM_OPT_FLAGS" INSTALLDIRS=vendor
 make
 popd
 
@@ -54,21 +54,11 @@ pushd Makerand
 make install
 popd
 
-# fix Newt.so perms
-find $RPM_BUILD_ROOT/usr -name Makerand.so | xargs chmod 755
-
-[ -x /usr/lib/rpm/brp-compress ] && /usr/lib/rpm/brp-compress
+find $RPM_BUILD_ROOT -name Makerand.so | xargs chmod 755
 
 find $RPM_BUILD_ROOT \( -name perllocal.pod -o -name .packlist \) -exec rm -v {} \;
-
-find $RPM_BUILD_ROOT/usr -type f -print | 
-	sed "s@^$RPM_BUILD_ROOT@@g" | 
-	grep -v perllocal.pod | 
-	grep -v "\.packlist" > filelist
-if [ ! -s filelist ] ; then
-    echo "ERROR: EMPTY FILE LIST"
-    exit 1
-fi
+find $RPM_BUILD_ROOT -type f -name '*.bs' -a -size 0 -exec rm -f {} ';'
+find $RPM_BUILD_ROOT -depth -type d -exec rmdir {} 2>/dev/null ';'
 
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/cron.daily \
          $RPM_BUILD_ROOT%{_mandir}/man1 \
@@ -96,16 +86,23 @@ sed -e "s|^\$bindir.*$|\$bindir = \"%{_bindir}\";|" \
     -e "/@EXTRA@/d" \
   < $RPM_SOURCE_DIR/genkey.pl > $RPM_BUILD_ROOT%{_bindir}/genkey
 
+chmod -R u+w $RPM_BUILD_ROOT
+
 %clean
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
 
-%files -f filelist
-%defattr(0644,root,root,0755)
+%files
+%defattr(-,root,root)
 %attr(0755,root,root) %{_bindir}/*
 %attr(0755,root,root) %{_sysconfdir}/cron.daily/certwatch
-%{_mandir}/man1/*.1*
+%{_mandir}/man*/*
+%{perl_vendorarch}/Crypt
+%{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Thu Mar  1 2007 Joe Orton <jorton@redhat.com> 2.3-2
+- various cleanups; require perl(Newt) throughout not newt-perl
+
 * Thu Aug 17 2006 Joe Orton <jorton@redhat.com> 2.3-1
 - add GPL-licensed keyrand replacement (#20254)
 
