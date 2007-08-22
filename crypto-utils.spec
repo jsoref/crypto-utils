@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.3
-Release: 2
+Release: 3
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -100,6 +100,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Wed Aug 22 2007 Joe Orton <jorton@redhat.com> 2.3-3
+- fix certwatch -a (Tuomo Soini, #253819)
+
 * Thu Mar  1 2007 Joe Orton <jorton@redhat.com> 2.3-2
 - various cleanups; require perl(Newt) throughout not newt-perl
 
