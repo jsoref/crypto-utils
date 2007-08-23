@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.3
-Release: 3
+Release: 4
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -12,10 +12,12 @@ Source3: certwatch.cron
 Source4: certwatch.xml
 Source5: genkey.xml
 Source6: keyrand.c
+Source7: COPYING
 Group: Applications/System
-License: Various
+License: MIT and GPLv2+
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires: openssl-devel, perl-devel, pkgconfig, newt-devel, xmlto, perl(Newt)
+BuildRequires: openssl-devel, pkgconfig, newt-devel, xmlto
+BuildRequires: perl-devel, perl(Newt), perl(Extutils::MakeMaker)
 Requires: perl(Newt), openssl >= 0.9.7f-4
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Obsoletes: crypto-rand
@@ -49,6 +51,9 @@ popd
 
 %install
 rm -rf $RPM_BUILD_ROOT
+
+sed -n '1,/^ \*\/$/p' librand/qshs.c > LICENSE.librand
+cp -p $RPM_SOURCE_DIR/COPYING .
 
 pushd Makerand
 make install
@@ -96,10 +101,15 @@ chmod -R u+w $RPM_BUILD_ROOT
 %attr(0755,root,root) %{_bindir}/*
 %attr(0755,root,root) %{_sysconfdir}/cron.daily/certwatch
 %{_mandir}/man*/*
+%doc LICENSE* COPYING
 %{perl_vendorarch}/Crypt
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Thu Aug 23 2007 Joe Orton <jorton@redhat.com> 2.3-4
+- fix certwatch -p too
+- clarify License; package license texts
+
 * Wed Aug 22 2007 Joe Orton <jorton@redhat.com> 2.3-3
 - fix certwatch -a (Tuomo Soini, #253819)
 

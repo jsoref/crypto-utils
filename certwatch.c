@@ -27,7 +27,7 @@
 
 */
 
-/* $Id: certwatch.c,v 1.8 2005/05/26 08:08:46 jorton Exp $ */
+/* $Id: certwatch.c,v 1.9 2007/08/22 08:13:29 jorton Exp $ */
 
 /* Certificate expiry warning generation code, based on code from
  * Stronghold.  Joe Orton <jorton@redhat.com> */
@@ -199,7 +199,7 @@ int main(int argc, char **argv)
      * mktime() back to UTC: */
     tzset();
     
-    while ((optc = getopt_long(argc, argv, "qpa:", options, NULL)) != -1) {
+    while ((optc = getopt_long(argc, argv, "qp:a:", options, NULL)) != -1) {
         switch (optc) {
         case 'q':
             quiet = 1;
@@ -212,6 +212,7 @@ int main(int argc, char **argv)
             break;
         default:
             exit(2);
+            break;
         }
     }
 
