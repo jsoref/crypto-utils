@@ -199,7 +199,7 @@ int main(int argc, char **argv)
      * mktime() back to UTC: */
     tzset();
     
-    while ((optc = getopt_long(argc, argv, "qpa:", options, NULL)) != -1) {
+    while ((optc = getopt_long(argc, argv, "qp:a:", options, NULL)) != -1) {
         switch (optc) {
         case 'q':
             quiet = 1;
@@ -212,6 +212,7 @@ int main(int argc, char **argv)
             break;
         default:
             exit(2);
+            break;
         }
     }
 
