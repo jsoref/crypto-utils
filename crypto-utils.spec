@@ -17,7 +17,7 @@ Group: Applications/System
 License: MIT and GPLv2+
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: openssl-devel, pkgconfig, newt-devel, xmlto
-BuildRequires: perl-devel, perl(Newt), perl(Extutils::MakeMaker)
+BuildRequires: perl-devel, perl(Newt), perl(ExtUtils::MakeMaker)
 Requires: perl(Newt), openssl >= 0.9.7f-4
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Obsoletes: crypto-rand
