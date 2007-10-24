@@ -44,7 +44,8 @@ date +"%e %B %Y" | tr -d '\n' > date.xml
 echo -n %{version} > version.xml
 
 for m in certwatch.xml genkey.xml keyrand.xml; do
-  xmlto man $RPM_SOURCE_DIR/${m} 
+  cp $RPM_SOURCE_DIR/${m} .
+  xmlto man ${m} 
 done
 
 pushd Makerand
