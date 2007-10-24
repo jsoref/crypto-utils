@@ -25,3 +25,37 @@ certwatch: certwatch.c
 
 test-certwatch: certwatch
 	./certwatch
+
+genkey: genkey.pl Makefile
+	sed -e "s|^\$$bindir.*$$|\$$bindir = \"/usr/bin\";|" \
+	    -e "s|^\$$ssltop.*$$|\$$ssltop = \"$(PWD)\";|" \
+	    -e "s|^\$$sslconf.*$$|\$$sslconf = \"/etc/pki/tls/openssl.cnf\";|" \
+	    -e "s|^\$$cadir.*$$|\$$cadir = \"/etc/pki/CA\";|" \
+	    -e "1s|.*|\#\!/usr/bin/perl|	g" \
+	    -e "s/'Challenge',/'Email','Challenge',/g" \
+	    -e "/@EXTRA@/d" < $< > $@
+	chmod 755 $@
+
+test-genkey: genkey
+	mkdir -p certs private
+	./genkey --test `hostname`
+
+date.xml:
+	date +"%e %B %Y" | tr -d '\n' > $@
+
+version.xml:
+	echo -n ${VERSION} > $@
+
+man-genkey: genkey.xml date.xml version.xml
+	xmlto man genkey.xml
+	man ./genkey.1
+
+man-keyrand: keyrand.xml date.xml version.xml
+	xmlto man keyrand.xml
+	man ./keyrand.1
+
+man-certwatch: certwatch.xml date.xml version.xml
+	xmlto man certwatch.xml
+	man ./certwatch.1
+
+

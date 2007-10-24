@@ -49,7 +49,7 @@ sub InitRoot
 
     Newt::Cls();
     Newt::DrawRootText(0, 0, 
-		       "Red Hat Keypair Generation (c) 2005 Red Hat, Inc.");
+		       "Red Hat Keypair Generation (c) 2007 Red Hat, Inc.");
 
     if ($help == 1) {
 	Newt::PushHelpLine("  <Tab>/<Alt-Tab> between elements  |" .
@@ -134,7 +134,7 @@ if ($ca_mode) {
 
 ### State variables
 my $bits = 0;
-my $myca = "";
+my $myca = "Other";
 my $useca = 0;
 my $cadetails;
 #
@@ -183,8 +183,7 @@ if ($genreq_mode && !(-f $keyfile)) {
 my @windows;
 if ($genreq_mode) {
     $useca = 1;
-    @windows = (whichCAWindow,
-		genReqWindow,
+    @windows = (genReqWindow,
 		);
     $doingwhat="CSR generation";
 } elsif ($ca_mode) {
@@ -204,7 +203,6 @@ if ($genreq_mode) {
 		getRandomDataWindow, ## leaves newt suspended
 		generateKey,
 		wantCAWindow,
-		whichCAWindow,
 		genReqWindow,
 		genCertWindow,
 		encryptKeyWindow,
@@ -563,8 +561,7 @@ EOT
 Now we are going to set the passphrase on the private key. This
 passphrase is used to encrypt your private key when it is stored
 on disk. You will have to type this passphrase when the server
-starts. If you do not want to store the key encrypted on disk
-read about the "decrypt_key" command in the documentation.
+starts
 
 -- DO NOT LOSE THIS PASS PHRASE --
 
@@ -884,9 +881,9 @@ sub genReqWindow
     $csrfile = $ssltop."/certs/".$servername.".$num.csr";
     
     my $msg = "You are about to be asked to enter information that will be ".
-	"incorporated into your certificate request to $myca. What you are about to ".
-	 "enter is what is called a Distinguished Name or a DN.  There are ".
-	 "quite a few fields but you can leave some blank.";
+	"incorporated into your certificate request to a CA. What you are about to ".
+        "enter is what is called a Distinguished Name or a DN.  There are ".
+        "quite a few fields but you can leave some blank.";
 
     my $ret = getCertDetails($servername,$msg, 1);
     return $ret unless ($ret eq "Next");

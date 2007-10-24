@@ -1,1 +1,10 @@
 *.rpm
+*.1
+version.xml
+date.xml
+private
+certs
+genkey
+clog
+.*.log
+x86_64

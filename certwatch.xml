@@ -1,11 +1,19 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+
+<!ENTITY date SYSTEM "date.xml">
+<!ENTITY version SYSTEM "version.xml">
+
+]>
+
 <refentry>
 
   <refentryinfo>
+    <date>&date;</date>
+    <title>Cryptography Utilities</title>
     <productname>crypto-utils</productname>
-    <date>April 2005</date>
+    <productnumber>&version;</productnumber>
   </refentryinfo>
 
   <refmeta>
@@ -108,20 +116,22 @@
 
     <para>The <command>certwatch</command> program is run daily by
     <command>crond</command> from the file
-    <filename>/etc/cron.daily/certwatch</filename> to warn about the
-    imminent expiry of SSL certificates configured for use in the
-    Apache HTTP server.  This warning can be disabled by adding the
-    line: <literal>NOCERTWATCH=yes</literal> to the file
-    <filename>/etc/sysconfig/httpd</filename>.  Options to pass to
-    certwatch can be specified in that file in the
-    <literal>CERTWATCH_OPTS</literal> environment variable.</para>
+    <filename>/etc/cron.daily/certwatch</filename> to generate warning
+    mail concerning the imminent expiry of SSL certificates configured
+    for use in the Apache HTTP server.  These warnings can be disabled
+    by adding the line: <literal>NOCERTWATCH=yes</literal> to the file
+    <filename>/etc/sysconfig/httpd</filename>.  Additional options to
+    pass to <command>certwatch</command> can be specified in that file
+    in the <literal>CERTWATCH_OPTS</literal> environment
+    variable.</para>
 
   </refsect1>
 
   <refsect1>
     <title>Files</title>
 
-    <para><filename>/etc/cron.daily/certwatch</filename></para>
+    <para><filename>/etc/cron.daily/certwatch</filename>,
+    <filename>/etc/sysconfig/httpd</filename></para>
   </refsect1>
   
   <refsect1>
