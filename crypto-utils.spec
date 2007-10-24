@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.3
-Release: 4
+Release: 5
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -13,6 +13,7 @@ Source4: certwatch.xml
 Source5: genkey.xml
 Source6: keyrand.c
 Source7: COPYING
+Source8: keyrand.xml
 Group: Applications/System
 License: MIT and GPLv2+
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -39,8 +40,11 @@ cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/openssl \
 cc $RPM_OPT_FLAGS -Wall -Werror \
    $RPM_SOURCE_DIR/keyrand.c -o keyrand -lnewt
 
-for m in certwatch.xml genkey.xml; do
-  xmlto man $RPM_SOURCE_DIR/$m
+date +"%e %B %Y" | tr -d '\n' > date.xml
+echo -n %{version} > version.xml
+
+for m in certwatch.xml genkey.xml keyrand.xml; do
+  xmlto man $RPM_SOURCE_DIR/${m} 
 done
 
 pushd Makerand
@@ -76,10 +80,9 @@ install -c -m 755 keyrand $RPM_BUILD_ROOT%{_bindir}/keyrand
 install -c -m 755 certwatch $RPM_BUILD_ROOT%{_bindir}/certwatch
 install -c -m 755 $RPM_SOURCE_DIR/certwatch.cron \
    $RPM_BUILD_ROOT%{_sysconfdir}/cron.daily/certwatch
-install -c -m 644 certwatch.1 \
-   $RPM_BUILD_ROOT%{_mandir}/man1/certwatch.1
-install -c -m 644 genkey.1 \
-   $RPM_BUILD_ROOT%{_mandir}/man1/genkey.1
+for f in certwatch genkey keyrand; do 
+   install -c -m 644 ${f}.1 $RPM_BUILD_ROOT%{_mandir}/man1/${f}.1
+done
 
 # install genkey
 sed -e "s|^\$bindir.*$|\$bindir = \"%{_bindir}\";|" \
@@ -106,6 +109,11 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Wed Oct 24 2007 Joe Orton <jorton@redhat.com> 2.3-5
+- genkey: skip the CA selection dialog; the CA-specific 
+  instructions are all out-of-date
+- man page updates, add man page for keyrand
+
 * Thu Aug 23 2007 Joe Orton <jorton@redhat.com> 2.3-4
 - fix certwatch -p too
 - clarify License; package license texts
