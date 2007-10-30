@@ -561,7 +561,7 @@ EOT
 Now we are going to set the passphrase on the private key. This
 passphrase is used to encrypt your private key when it is stored
 on disk. You will have to type this passphrase when the server
-starts
+starts.
 
 -- DO NOT LOSE THIS PASS PHRASE --
 
