@@ -37,7 +37,7 @@
   <refsect1>
     <title>Description</title>
 
-    <para><command>keyrand</command> is an tool which collects a given
+    <para><command>keyrand</command> is a tool which collects a given
     number of random bits from the kernel random number generator,
     presenting a text-based user interface showing progress.</para>
 

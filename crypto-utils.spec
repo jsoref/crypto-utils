@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.3
-Release: 6
+Release: 7
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -110,6 +110,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Wed Dec  5 2007 Joe Orton <jorton@redhat.com> 2.3-7
+- rebuild for new OpenSSL
+
 * Tue Oct 30 2007 Joe Orton <jorton@redhat.com> 2.3-6
 - genkey: wording fix
 
