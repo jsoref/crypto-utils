@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.3
-Release: 8
+Release: 9
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -110,6 +110,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Tue Feb 19 2008 Fedora Release Engineering <rel-eng@fedoraproject.org> - 2.3-9
+- Autorebuild for GCC 4.3
+
 * Thu Feb  7 2008 Tom "spot" Callaway <tcallawa@redhat.com> 2.3-8
 - rebuild for new perl
 
