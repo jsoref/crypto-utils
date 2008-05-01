@@ -27,13 +27,63 @@
 
 */
 
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is the Netscape security libraries.
+ *
+ * The Initial Developer of the Original Code is
+ * Netscape Communications Corporation.
+ * Portions created by the Initial Developer are Copyright (C) 1994-2000
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Dr Vipul Gupta <vipul.gupta@sun.com>, Sun Microsystems Laboratories
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+
 /* $Id$ */
 
 /* Certificate expiry warning generation code, based on code from
  * Stronghold.  Joe Orton <jorton@redhat.com> */
 
-#include <openssl/x509.h>
-#include <openssl/pem.h>
+/* Replaced usage of OpenSSL with NSS.
+ * Elio Maldonado <emaldona@redhat.com> */
+
+#include <nspr.h>
+#include <nss.h>
+#include <cert.h>
+#include <certt.h>
+#include <prlong.h>
+#include <prtime.h>
+#include <pk11func.h>
+#include <assert.h>
+#include <secmod.h>
+#include <base64.h>
+#include <seccomon.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -41,55 +91,109 @@
 #include <getopt.h>
 #include <time.h>
 
+#define TIME_BUF_SIZE 100
+
+/* Return a certificate structure from a pem-encoded cert in a file; 
+ * or NULL on failure. Semantics similar to the OpenSSL call
+ * PEM_read_X509(fp, NULL, NULL, NULL);
+ */
+extern CERTCertificate * 
+PEMUTIL_PEM_read_X509(const char *filename);
+
+/* size big enough for formatting time buffer */
+#define TIME_SIZE 30
+
 static int warn_period = 30;
 static char *warn_address = "root";
 
-/* Turn an ASN.1 UTCTIME object into a time_t. */
-static time_t decode_utctime(const ASN1_UTCTIME *utc)
+/* Format a PRTime value into a buffer with format "%a %b %d %H:%M:%S %Y"
+ * and return the buffer. The buffer returned must the freed with PORT_Free.
+ * Semantics are similar to asctime. 
+ */
+char * AsciiTime(PRTime time)
+{	
+	PRExplodedTime printable;
+	char *timebuf;
+	
+	PR_ExplodeTime(time, PR_GMTParameters, &printable);
+	timebuf = PORT_Alloc(TIME_BUF_SIZE);
+	(void) PR_FormatTime(timebuf, TIME_BUF_SIZE, "%a %b %d %H:%M:%S %Y", &printable);
+	if (strlen(timebuf) < TIME_BUF_SIZE) timebuf[strlen(timebuf)] = '\0';
+	return (timebuf);
+}
+
+/* Uses the password passed in the -f(pwfile) argument of the command line.  
+ * After use once, null it out otherwise PKCS11 calls us forever.?
+ * 
+ * Code based on SECU_GetModulePassword from the Mozilla NSS secutils
+ * imternal librart. 
+ */
+static char *GetModulePassword(PK11SlotInfo *slot, PRBool retry, void *arg)
 {
-    struct tm tm = {0};
-    int i = utc->length;
+    int i;
+    unsigned char phrase[200];
+    PRFileDesc *fd;
+    PRInt32 nb;
+    char *pwFile = arg;
 
-    if (i < 10)
-	return -1;
-    for (i = 0; i < 10; i++)
-	if ((utc->data[i] > '9') || (utc->data[i] < '0'))
-	    return -1;
+    if (!pwFile) return 0;
+    if (retry) return 0; /* no good retrying - file contents will be the same */ 
+    if (!(fd = PR_Open(pwFile, PR_RDONLY, 0))) return 0;
 
-    tm.tm_year = (utc->data[0]-'0') * 10 + (utc->data[1]-'0');
+    nb = PR_Read(fd, phrase, sizeof(phrase));
+    PR_Close(fd);
+    
+    /* handle the Windows EOL case */
+    i = 0;
+    while (phrase[i] != '\r' && phrase[i] != '\n' && i < nb) i++;
+    phrase[i] = '\0';
+    if (nb == 0) return NULL;
 
-    /* Deal with Year 2000 like eay did */
-    if (tm.tm_year < 70)
-	tm.tm_year += 100;
+    return (char*) PORT_Strdup((char*)phrase);
+}
 
-    tm.tm_mon = (utc->data[2]-'0') * 10 + (utc->data[3]-'0') - 1;
-    tm.tm_mday = (utc->data[4]-'0') * 10 + (utc->data[5]-'0');
-    tm.tm_hour = (utc->data[6]-'0') * 10 + (utc->data[7]-'0');
-    tm.tm_min = (utc->data[8]-'0') * 10 + (utc->data[9]-'0');
-    tm.tm_sec = (utc->data[10]-'0') * 10 + (utc->data[11]-'0');
-
-    return mktime(&tm) - timezone;
+/* Format a PRTime value into a buffer with format "%a %b %d %H:%M:%S %Y";
+ * semantics are those of ctime_r(). */
+char *pr_ctime(PRTime time, char *buf, int size)
+{
+    PRUint32 bytesCopied;
+    PRExplodedTime et;
+    PR_ExplodeTime(time, PR_GMTParameters, &et);
+    bytesCopied = PR_FormatTime(buf, size, "%a %b %d %H:%M:%S %Y", &et);
+    if (!bytesCopied) return NULL;
+    return buf;
 }
 
 /* Print a warning message that the certificate in 'filename', issued
  * to hostname 'hostname', will expire (or has expired). */
 static int warning(FILE *out, const char *filename, const char *hostname,
-                   time_t start, time_t end, time_t now, int quiet)
+                   SECCertTimeValidity validity, 
+                   PRTime start, PRTime end, PRTime now, int quiet)
 {
-    int renew = 1, days = (end - now) / (3600 * 24);    /* days till expiry */
+    /* Note that filename can be the cert nickname. */
+    int renew = 1;
     char subj[50];
-
-    if (start > now) {
+	PRTime prtimeDiff;
+	
+	LL_SUB(prtimeDiff, end, start);
+    
+    if ( LL_CMP(start, >, now) ) {   
         strcpy(subj, "is not yet valid");
         renew = 0;
-    } else if (days < 0) {
-        strcpy(subj, "has expired");
-    } else if (days == 0) {
-        strcpy(subj, "will expire today");
-    } else if (days == 1) {
-        sprintf(subj, "will expire tomorrow");
-    } else if (days < warn_period) {
-        sprintf(subj, "will expire in %d days", days);
+    } else if (LL_EQ(now, end)) {
+    	strcpy(subj, "will expire today");
+    } else if (LL_EQ(prtimeDiff, 1)) {
+    	sprintf(subj, "will expire tomorrow");
+    } else if (LL_CMP(prtimeDiff, <, warn_period)) {
+    	sprintf(subj, "will expire on %s", AsciiTime(end));
+        {
+            int days; /* days till expiry */
+            LL_L2I(days, prtimeDiff);
+            days = (days) / (3600 * 24);
+            assert(0 < days);
+            assert(days < warn_period);
+            sprintf(subj, "will expire in %d days", days);
+        }
     } else {
         return 0; /* nothing to warn about. */
     }
@@ -104,7 +208,7 @@ static int warning(FILE *out, const char *filename, const char *hostname,
             " ################# SSL Certificate Warning ################\n\n");
 
     fprintf(out, 
-            "  Certificate for hostname '%s', in file:\n"
+            "  Certificate for hostname '%s', in file (or by nickname):\n"
             "     %s\n\n",
             hostname, filename);
 
@@ -115,9 +219,10 @@ static int warning(FILE *out, const char *filename, const char *hostname,
               "  web site using SSL until the certificate is renewed.\n",
               out);
     } else {
-        char until[30] = "(unknown date)";
-        ctime_r(&start, until);
-        if (strlen(until) > 2) until[strlen(until)-1] = '\0';
+        char until[TIME_SIZE];
+        char *result = pr_ctime(start, until, TIME_SIZE);
+        assert(result == until);
+        if (strlen(until) < sizeof(until)) until[strlen(until)] = '\0';
         fprintf(out, 
                 "  The certificate is not valid until %s.\n\n"
                 "  Browsers will not be able to correctly connect to this\n"
@@ -133,56 +238,73 @@ static int warning(FILE *out, const char *filename, const char *hostname,
 }
 
 /* Extract the common name of 'cert' into 'buf'. */
-static int get_common_name(X509 *cert, char *buf, size_t bufsiz)
+static int get_common_name(CERTCertificate *cert, char *buf, size_t bufsiz)
 {
-    X509_NAME *name = X509_get_subject_name(cert);
-    
+    /* FIXME --- truncating names with spaces */
+    size_t namelen;
+    char *name = CERT_GetCommonName(&cert->subject);
+
     if (!name) return -1;
 
-    return X509_NAME_get_text_by_NID(name, NID_commonName, buf, bufsiz) == -1;
+    namelen = strlen(name);
+    if (bufsiz < namelen+1) return -1;
+
+    strncpy(buf, name, namelen);
+    buf[namelen] = '\0';
+    PORT_Free(name);
+
+    return 0;
 }
 
-/* Check whether the certificate in filename 'filename' has expired;
+/* Check whether the certificate in filename 'name' has expired;
  * issue a warning message if 'quiet' is zero.  If quiet is non-zero,
  * returns one to indicate that a warning would have been issued, zero
  * to indicate no warning would be issued, or -1 if an error
- * occurred. */
-static int check_cert(const char *filename, int quiet)
+ * occurred. 
+ *
+ * When byNickname is 1 then 'name' is a nickname to search
+ * for in the database otherwise it's the certificate file.
+ */
+static int check_cert(const char *name, int byNickname, int quiet) 
 {
-    X509 *cert;
-    FILE *fp;
-    ASN1_UTCTIME *notAfter, *notBefore;
-    time_t begin, end, now;
+    CERTCertificate *cert;
+    SECCertTimeValidity validity;
+    PRTime notBefore, notAfter;
     char cname[128];
+    
+    int doWarning = 0;
 
     /* parse the cert */
-    if ((fp = fopen(filename, "r")) == NULL) return -1;
-    cert = PEM_read_X509(fp, NULL, NULL, NULL);
-    fclose(fp);
+    cert = byNickname 
+    	? CERT_FindCertByNickname(CERT_GetDefaultCertDB(), (char *)name)
+    	: PEMUTIL_PEM_read_X509(name);
     if (cert == NULL) return -1;
     
     /* determine the validity period of the cert. */
-    notAfter = X509_get_notAfter(cert);
-    notBefore = X509_get_notBefore(cert);
-
-    /* get time_t's out of X509 times */
-    begin = decode_utctime(notBefore);
-    end = decode_utctime(notAfter);
-    now = time(NULL);
-    if (end == -1 || begin == -1 || now == -1) return -1;
+    validity = CERT_CheckCertValidTimes(cert, PR_Now(), PR_FALSE);
+    if (validity == secCertTimeUndetermined) goto cleanup;
     
+    /* get times out of the cert */
+    if (CERT_GetCertTimes(cert, &notBefore, &notAfter)
+        != SECSuccess) goto cleanup;
+
     /* find the subject's commonName attribute */
     if (get_common_name(cert, cname, sizeof cname))
-        return -1;
+        goto cleanup;
 
-    X509_free(cert);
-
-    /* don't warn about the automatically generate certificate */
+    /* don't warn about the automatically generated certificate */
     if (strcmp(cname, "localhost") == 0 ||
         strcmp(cname, "localhost.localdomain") == 0)
-        return -1;
+        goto cleanup;
 
-    return warning(stdout, filename, cname, begin, end, now, quiet);
+    doWarning = 1; /* ok so far, may do the warning */
+
+cleanup:
+    if (cert) CERT_DestroyCertificate(cert);
+    if (!doWarning) return -1;
+
+    return warning(stdout, name, cname, validity, 
+    		       notBefore, notAfter, PR_Now(), quiet);
 }
 
 int main(int argc, char **argv)
@@ -192,14 +314,25 @@ int main(int argc, char **argv)
         { "quiet", no_argument, NULL, 'q' },
         { "period", required_argument, NULL, 'p' },
         { "address", required_argument, NULL, 'a' },
+        { "configdir", required_argument, NULL, 'd' },
+        { "passwordfile", required_argument, NULL, 'w' },
+        { "certdbprefix", required_argument, NULL, 'w' },
+        { "keydbprexix", required_argument, NULL, 'w' },
         { NULL }
     };
+
+    char *certDBPrefix = ""; 
+    char *keyDBPrefix = "";
+
+    char *configdir = NULL;    /* contains the cert database */
+    char *passwordfile = NULL; /* module password file */
+    int byNickname = 0;        /* whether to search by nickname */
 
     /* The 'timezone' global is needed to adjust local times from
      * mktime() back to UTC: */
     tzset();
     
-    while ((optc = getopt_long(argc, argv, "qp:a:", options, NULL)) != -1) {
+    while ((optc = getopt_long(argc, argv, "qp:a:d:w:", options, NULL)) != -1) {
         switch (optc) {
         case 'q':
             quiet = 1;
@@ -210,11 +343,50 @@ int main(int argc, char **argv)
         case 'a':
             warn_address = strdup(optarg);
             break;
+        case 'd':
+            configdir = strdup(optarg);
+            byNickname = 1;
+            break;
+        case 'w':
+            passwordfile = strdup(optarg);
+            break;
+        case 'c':
+            certDBPrefix = strdup(optarg);
+            break;
+        case 'k':
+            keyDBPrefix = strdup(optarg);
+            break;
         default:
             exit(2);
             break;
         }
     }
+    
+    /* NSS initialization */
 
-    return check_cert(argv[optind], quiet) == 1 ? EXIT_SUCCESS : EXIT_FAILURE;
+    if (byNickname) {
+        /* cert in database */
+        if (NSS_Initialize(configdir, certDBPrefix, keyDBPrefix, 
+                   SECMOD_DB, NSS_INIT_READONLY) != SECSuccess) {
+            return EXIT_FAILURE;
+        }
+        /* in case module requires a password */
+        if (passwordfile) {
+            PK11_SetPasswordFunc(GetModulePassword);  
+        }
+    } else {
+    	/* cert in a pem file */
+        char *certDir = getenv("SSL_DIR"); /* Look in $SSL_DIR */
+        if (!certDir) {
+            certDir = "/etc/pki/nssdb";
+        }
+    	if (NSS_Initialize(certDir, certDBPrefix, keyDBPrefix, 
+                   SECMOD_DB, NSS_INIT_READONLY) != SECSuccess) {
+    		printf("NSS_Init(\"%s\") failed\n", certDir);
+            return EXIT_FAILURE;
+    	}
+    }
+
+    /* When byNickname is 1 argv[optind] is a nickname otherwise a filename. */ 
+    return check_cert(argv[optind], byNickname, quiet) == 1 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

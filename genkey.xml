@@ -35,6 +35,10 @@
         <arg><option>--genreq</option></arg>
         <arg><option>--makeca</option></arg>
       </group>
+      <group>
+        <arg><option>--nss</option></arg>
+        <arg><option>--debug</option>
+      </group>
       <arg choice="req"><replaceable>hostname</replaceable></arg>
     </cmdsynopsis>
   </refsynopsisdiv>
@@ -47,7 +51,8 @@
     Signing Requests (CSR).  Generated certificates are stored in the
     directory <filename>/etc/pki/tls/certs/</filename>, and the
     corresponding private key in
-    <filename>/etc/pki/tls/private/</filename>. </para>
+    <filename>/etc/pki/tls/private/</filename>. If using mod_nss
+    they are stored in the nss key and certficate databases. </para>
 
     <para><command>genkey</command> will prompt for the size of key
     desired; whether or not to generate a CSR; whether or not an
@@ -57,6 +62,11 @@
     <para><command>genkey</command> generates random data for the
     private key using the truerand library and also by prompting the
     user for entry of random text.</para>
+
+    <para><option>nss</option> indicates that mod_nss database 
+    should be used to store keys and certificates.</para>
+
+    <para><option>debug</option> set this flag to enable debug logs.</para>
 
   </refsect1>
   

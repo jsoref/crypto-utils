@@ -3,8 +3,8 @@
 
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
-Version: 2.3
-Release: 10
+Version: 2.4
+Release: 1
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -14,12 +14,22 @@ Source5: genkey.xml
 Source6: keyrand.c
 Source7: COPYING
 Source8: keyrand.xml
+Source9: pemutil.c
+Source10: keyutil.c
+Source11: certext.c
+Source12: secutil.c
+Source13: secerror.c
+Source14: keyutil.h
+Source15: secutil.h
+Source16: NSPRerrs.h
+Source17: SECErrs.h
+Source18: copying
 Group: Applications/System
 License: MIT and GPLv2+
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires: openssl-devel, pkgconfig, newt-devel, xmlto
+BuildRequires: nss-devel, pkgconfig, newt-devel, xmlto
 BuildRequires: perl-devel, perl(Newt), perl(ExtUtils::MakeMaker)
-Requires: perl(Newt), openssl >= 0.9.7f-4
+Requires: perl(Newt), nss >= 3.11.99.5-2fc-9
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Obsoletes: crypto-rand
 
@@ -34,8 +44,16 @@ SSL certificates and keys.
 %configure --with-newt=%{_prefix} CFLAGS="$CFLAGS -fPIC"
 make -C librand
 
-cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/openssl \
-   $RPM_SOURCE_DIR/certwatch.c -o certwatch -lcrypto
+cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/nspr4 -I/usr/include/nss3 \
+   $RPM_SOURCE_DIR/certwatch.c $RPM_SOURCE_DIR/pemutil.c \
+   -o certwatch -lnspr4 -lnss3
+
+cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/nspr4 -I/usr/include/nss3 \
+   $RPM_SOURCE_DIR/keyutil.c \
+   $RPM_SOURCE_DIR/certext.c \
+   $RPM_SOURCE_DIR/secutil.c \
+   $RPM_SOURCE_DIR/secerror.c \
+   -o keyutil -lnspr4 -lnss3
 
 cc $RPM_OPT_FLAGS -Wall -Werror \
    $RPM_SOURCE_DIR/keyrand.c -o keyrand -lnewt
@@ -84,6 +102,9 @@ install -c -m 755 $RPM_SOURCE_DIR/certwatch.cron \
 for f in certwatch genkey keyrand; do 
    install -c -m 644 ${f}.1 $RPM_BUILD_ROOT%{_mandir}/man1/${f}.1
 done
+
+# install keyutil
+install -c -m 755 keyutil $RPM_BUILD_ROOT%{_bindir}/keyutil
 
 # install genkey
 sed -e "s|^\$bindir.*$|\$bindir = \"%{_bindir}\";|" \

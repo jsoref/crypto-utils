@@ -49,6 +49,9 @@
     the certificate, the certificate is ignored and no output is
     produced.  In quiet mode, no output is given, but the exit status
     can still be used.</para>
+    
+    <para>The certificate can be specified by its nickname or by a 
+    path to the containing file.</para>
 
   </refsect1>
 
@@ -84,6 +87,14 @@
         <listitem><simpara>Specify the address used in the To field of
         the warning e-mail issued if quiet mode is not enabled.  The
         default is <literal>root</literal>.</simpara></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--directory <replaceable>cert-directory</replaceable></option>,
+        <option>-d <replaceable>cert-directory</replaceable></option></term>
+
+        <listitem><simpara>Specify the database directory containing the certificate 
+        and key database files. The default is yet to be determined.</simpara></listitem>
       </varlistentry>
 
     </variablelist>
