@@ -88,7 +88,7 @@
 #include <prio.h>
 #include <prlong.h>
 #include <prtime.h>
-#include <pk11func.h>
+#include <pkcs11.h>
 #include <pk11pub.h>
 #include <pkcs11t.h>
 #include <assert.h>
@@ -102,6 +102,10 @@
 #include <cryptohi.h>
 #include <plarenas.h>
 #include <secasn1.h>
+
+#include <secpkcs5.h>
+#include <keythi.h>
+#include <secmodt.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -173,7 +177,8 @@ Usage(char *progName)
 	fprintf(stderr, "-g keysize in bits");
 	fprintf(stderr, "-v validity in months");
 	fprintf(stderr, "-z noise file");
-	fprintf(stderr, "-f password file");
+	fprintf(stderr, "-f key encryption password file");
+	fprintf(stderr, "-f module access password file");
 	fprintf(stderr, "-d digest algorithm");
 	fprintf(stderr, "-i input (key to encrypt)");
 	fprintf(stderr, "-k key out, when csr or cert generation");
@@ -760,7 +765,7 @@ GenerateRSAPrivateKey(KeyType keytype,
     int publicExponent,
 	char *noise, 
     SECKEYPublicKey **pubkeyp,
-    secuPWData *pwdata)
+    secuPWData *accessPassword)
 {
     CK_MECHANISM_TYPE  mechanism;
     PK11RSAGenParams   rsaparams;
@@ -769,7 +774,7 @@ GenerateRSAPrivateKey(KeyType keytype,
     if (slot == NULL) 
     	return NULL;
 
-    if (PK11_Authenticate(slot, PR_TRUE, pwdata) != SECSuccess)
+    if (PK11_Authenticate(slot, PR_TRUE, accessPassword) != SECSuccess)
     	return NULL;
 
     /*
@@ -801,7 +806,7 @@ GenerateRSAPrivateKey(KeyType keytype,
     		mechanism, &rsaparams, pubkeyp,
             PR_FALSE /* isPerm */, 
             PR_TRUE  /* isSensitive*/, 
-            pwdata   /* wincx */
+            accessPassword   /* wincx */
             );
     
     assert(privKey);
@@ -811,7 +816,7 @@ GenerateRSAPrivateKey(KeyType keytype,
 
 static SECStatus
 ValidateCert(CERTCertDBHandle *handle, CERTCertificate  *cert, char *name, char *date,
-	    char *certUsage, PRBool checkSig, PRBool logit, secuPWData *pwdata)
+	    char *certUsage, PRBool checkSig, PRBool logit, secuPWData *accessPassword)
 {
     SECStatus rv;
     int64 timeBoundary;
@@ -872,7 +877,7 @@ ValidateCert(CERTCertDBHandle *handle, CERTCertificate  *cert, char *name, char 
 		}
 		fprintf(stdout, "%s: CERT_VerifyCertificate called\n", progName);
 		rv = CERT_VerifyCertificate(handle, cert, checkSig, usage,
-			     timeBoundary, pwdata, log, &usage);
+			     timeBoundary, accessPassword, log, &usage);
 		fprintf(stdout, "%s: CERT_VerifyCertificate returned %d\n", progName, rv);
 		
 		if ( log ) {
@@ -934,7 +939,7 @@ ImportKey(CERTCertDBHandle *certHandle,
 	SECKEYEncryptedPrivateKeyInfo epki;
 	PRArenaPool *arena = NULL;
 	SECItem pwitem = { 0, NULL, 0 };
-	secuPWData pwdata = { 0, NULL };
+	secuPWData accessPassword = { 0, NULL };
 	
 	do {
 		if (passwordfile) {
@@ -973,7 +978,7 @@ ImportKey(CERTCertDBHandle *certHandle,
 				&epki, &pwitem, &nickname, &dummy, 
 				PR_FALSE, PR_TRUE, /* not permanent, private */
 				rsaKey, 0,         /* signing */
-				&pwdata
+				&accessPassword
 	           );
 		if (rv) {
 			SECU_PrintError(progName, 
@@ -992,35 +997,149 @@ ImportKey(CERTCertDBHandle *certHandle,
 	return rv;
 }
 
+/* Decrypt the private key */
+SECStatus DecryptKey(
+	SECKEYEncryptedPrivateKeyInfo *epki,    
+    SECOidTag algTag,
+    SECItem *pwitem, 
+    secuPWData *accessPassword,
+    SECItem **derPKI
+    )
+{
+	PLArenaPool *arena = NULL;
+	SECItem  *cryptoParam = NULL;
+	PK11SymKey *symKey = NULL;
+	PK11Context *ctx = NULL;
+	SECItem *dest = NULL;
+	SECStatus rv = SECSuccess;
+
+    if (!pwitem) {
+		return SEC_ERROR_INVALID_ARGS;
+    }
+	
+	do {	
+		SECAlgorithmID algid = epki->algorithm;
+		CK_MECHANISM_TYPE cryptoMechType;
+		CK_MECHANISM cryptoMech;
+		CK_ATTRIBUTE_TYPE operation = CKA_DECRYPT;
+		
+		/* don't know if this will work */
+		symKey = PK11_PBEKeyGen(PK11_GetInternalSlot(), 
+				&algid, pwitem, PR_FALSE, accessPassword);
+	    if (symKey == NULL) {
+	    	ERROR_BREAK;
+	    }
+	    
+	    cryptoMechType = PK11_GetPBECryptoMechanism(&algid, &cryptoParam, pwitem);
+	    if (cryptoMechType == CKM_INVALID_MECHANISM)  {
+	    	ERROR_BREAK;
+	    }
+	    
+	    cryptoMech.mechanism = PK11_GetPadMechanism(cryptoMechType);
+	    cryptoMech.pParameter = cryptoParam ? cryptoParam->data : NULL;
+	    cryptoMech.ulParameterLen = cryptoParam ? cryptoParam->len : 0;
+
+	    ctx = PK11_CreateContextBySymKey(cryptoMechType, operation, symKey, cryptoParam);
+	    if (ctx == NULL) {
+	    	 ERROR_BREAK;    	
+	    }
+
+	    arena = PORT_NewArena(2048);
+	    if (!arena) {
+	    	GEN_BREAK(PR_OUT_OF_MEMORY_ERROR);
+	    }
+
+	    dest = malloc(sizeof(SECItem));
+	    assert(dest);
+	    dest->data = PORT_ArenaAlloc(arena, epki->encryptedData.len);
+	    dest->len = 0;
+	    dest->type = siBuffer; /* siClearDataBuffer? */
+	    
+	    rv = PK11_CipherOp(ctx, 
+	    		dest->data,                    /* out */
+	    		(int *)(&dest->len),           /* out len */
+	    		(int)epki->encryptedData.len,    /* max out */
+	    		epki->encryptedData.data,        /* in */
+			    (int)epki->encryptedData.len);   /* in len */
+	    
+	    assert(dest->len == epki->encryptedData.len);
+	    assert(rv == SECSuccess);
+	    rv = PK11_Finalize(ctx);
+	    assert(rv == SECSuccess);
+	    
+    } while (0);
+ 
+	/* cleanup */
+	if (symKey) {
+		PK11_FreeSymKey(symKey);
+	}
+    if (cryptoParam) {
+    	SECITEM_ZfreeItem(cryptoParam, PR_TRUE);
+    	cryptoParam = NULL;
+    }
+	if (ctx) {
+		PK11_DestroyContext(ctx, PR_TRUE);
+	}
+
+	if (rv != SECSuccess) {
+		if (dest) {
+			if (arena) {
+				PORT_FreeArena(arena, PR_TRUE);
+			}
+		}
+		*derPKI = NULL;
+	} else {
+		*derPKI = dest;		
+	}
+	
+	return rv;
+
+}
+
 /* Output the private key to a file */
 static SECStatus
 KeyOut(const char *keyoutfile,
-	   const char *passwordfile,
+	   const char *key_pwd_file,
        SECKEYPrivateKey *privkey,
        SECKEYPublicKey *pubkey,
        SECOidTag algTag,
-       secuPWData *pwdata,
+       secuPWData *accessPassword,
        PRBool ascii)
 {
+	
+#define PRAND_PASS_LEN 6
+	
 	PRFileDesc *keyOutFile = NULL;
-	PRUint32 total = 0, numBytes = 0;
+	PRUint32 total = 0;
+	PRUint32 numBytes = 0;
 	SECItem *derEPKI = NULL;
+	SECItem *derPKI = NULL;
 	char *b64 = NULL;
 	SECItem pwitem = { 0, NULL, 0 };
 	PRArenaPool *arena = NULL;
 	SECKEYEncryptedPrivateKeyInfo *epki = NULL;
+	unsigned char randomPassword[PRAND_PASS_LEN];
+	
 	int rv = SECSuccess;
 
 	do {
-        
-		if (passwordfile) {
-			if (!GetKeyPassword(passwordfile, &pwitem))
+		/* get the password from the file */
+		if (key_pwd_file) {
+			if (!GetKeyPassword(key_pwd_file, &pwitem)) {
 				return 255;
+			}
 		} else {
-			PR_fprintf(PR_STDERR, 
-					"%s export of clear keys not impemented yet\n",
-					progName);
+			/* No password file indicates the caller wants clear keys. 
+			 * Make up a dummy password to get NSS to export an encrypted 
+			 * key and then decrypt it 
+			 */
+			rv = PK11_GenerateRandom(randomPassword, PRAND_PASS_LEN);
+			if (rv != SECSuccess) GEN_BREAK(rv);	
+			pwitem.data = randomPassword;
+			pwitem.len = PRAND_PASS_LEN;
+			pwitem.type = siBuffer;
 		}
+		
     	keyOutFile = PR_Open(keyoutfile, PR_RDWR | PR_CREATE_FILE | PR_TRUNCATE, 00660);
     	if (!keyOutFile) {
     	    PR_fprintf(PR_STDERR,
@@ -1030,7 +1149,7 @@ KeyOut(const char *keyoutfile,
     	}
 
 	    epki = PK11_ExportEncryptedPrivKeyInfo(NULL,
-	    		algTag, &pwitem, privkey, 1000, pwdata);
+	    		algTag, &pwitem, privkey, 1000, accessPassword);
 		if (!epki) {
 			rv = PORT_GetError();
 			SECU_PrintError(progName, 
@@ -1040,55 +1159,59 @@ KeyOut(const char *keyoutfile,
 		
 		arena = PORT_NewArena(DER_DEFAULT_CHUNKSIZE);
 		assert(arena);
-
-        /* NULL dest to let it allocate memory for us */
-		derEPKI = SEC_ASN1EncodeItem(arena, NULL, epki,
-		            SECKEY_EncryptedPrivateKeyInfoTemplate);
 		
-        if (derEPKI == NULL) {
-        	PR_fprintf(PR_STDERR, "%s ASN1 Encode failed (%dl)\n",
-        		    progName, PR_GetError());
-        	GEN_BREAK(255);
-        }
-	    
-	    assert(derEPKI);      
-	    assert(derEPKI->len);
-		assert(derEPKI->data);
-    	   
-		if (!passwordfile) {
-			/* Make a decrypted key the one to write out. 
-			 * Can't use SECKEYPrivateKeyInfo *
-			 * *PK11_ExportPrivateKeyInfo(
-		     * CERTCertificate *cert, void *wincx);
-		     * as it always returns NULL.
-			 * We exported the key encrypted, decrypt it
-			 * and write that one out.
-			 */
-		}
+    	if (key_pwd_file) {
+	        /* NULL dest to let it allocate memory for us */
+			derEPKI = SEC_ASN1EncodeItem(arena, NULL, epki,
+			            SECKEY_EncryptedPrivateKeyInfoTemplate);
+	        if (rv != SECSuccess) {
+	        	PR_fprintf(PR_STDERR, "%s ASN1 Encode failed (%dl)\n",
+	        		    progName, rv);
+	        	GEN_BREAK(rv);
+	        }
+   		
+    	} else {
+			/* Make a decrypted key the one to write out. */
+			rv = DecryptKey(epki, algTag, &pwitem, accessPassword, &derPKI);
+			if (rv) {
+				GEN_BREAK(rv);
+			}
+    	}
  
         if (ascii) {
-        	char *header = passwordfile 
-                ? ENCRYPTED_KEY_HEADER : KEY_HEADER;
-        	char *trailer = passwordfile 
-                ? ENCRYPTED_KEY_TRAILER : KEY_TRAILER;
-        	
-    		b64 = BTOA_ConvertItemToAscii(derEPKI);
+        	/* we could be exporting a clear or encrypted key */
+        	SECItem *src  = key_pwd_file ? derEPKI : derPKI;
+        	char *header  = key_pwd_file ? ENCRYPTED_KEY_HEADER : KEY_HEADER;
+        	char *trailer = key_pwd_file ? ENCRYPTED_KEY_TRAILER : KEY_TRAILER;
+        	        	
+    		b64 = BTOA_ConvertItemToAscii(src);
     	    assert(b64);
     	    total = PL_strlen(b64);
        	
             PR_fprintf(keyOutFile, "%s\n", header);
             
         	numBytes = PR_Write(keyOutFile, b64, total);
-        	assert(numBytes == total);
+        	
+            if (numBytes != total) {
+            	printf("Wrote  %d bytes, instead of %d\n", numBytes, total);
+            }
+
         	
         	PR_fprintf(keyOutFile, "\n%s\n", trailer);
         } else {
-            numBytes = PR_Write(keyOutFile, derEPKI, derEPKI->len);
-            assert(numBytes == derEPKI->len);
+        	if (key_pwd_file) {
+        		numBytes = PR_Write(keyOutFile, derEPKI, derEPKI->len);
+        	} else {
+        		numBytes = PR_Write(keyOutFile, derPKI, derPKI->len);
+                if (numBytes != derEPKI->len) {
+                	printf("Wrote  %d bytes, instead of %d\n", numBytes, derPKI->len);
+                }
+
+        	}
+            
         }
     	
-		printf("Wrote %d bytes of encoded data to %s \n", 
-				numBytes, keyoutfile);
+		printf("Wrote %d bytes of encoded data to %s \n", numBytes, keyoutfile);
 		/* can we read it and reverse operations */
 		
     } while (0);
@@ -1101,6 +1224,13 @@ KeyOut(const char *keyoutfile,
    	    PORT_FreeArena(arena, PR_FALSE);
     }
 	
+  	if (!key_pwd_file) {
+  		/* paranoia, this is stack-based object but we clear it anyway */
+  		int i;
+  		for (i = 0; i< PRAND_PASS_LEN; i++) {
+  			randomPassword[i]='\0';
+  		}
+  	}
 	return rv;
 }
 
@@ -1110,7 +1240,8 @@ KeyOut(const char *keyoutfile,
 static int keyutil_main(
 		CERTCertDBHandle *certHandle,
 		const char       *noisefile, 
-        const char       *passwordfile, 
+        const char       *access_pwd_file,
+        const char       *key_pwd_file,
         const char       *subjectstr,
         int              keysize, 
     	int              warpmonths,
@@ -1130,7 +1261,7 @@ static int keyutil_main(
 	SECKEYPublicKey *pubkey     = NULL;
                                /* PK11_GetInternalSlot() ? */
 	PK11SlotInfo *slot          = PK11_GetInternalKeySlot();
-    secuPWData  pwdata          = { PW_NONE, 0 };
+    secuPWData  accessPassword  = { PW_NONE, 0 };
     KeyType     keytype         = rsaKey;
     SECOidTag   hashAlgTag      = SEC_OID_UNKNOWN;
     PRBool      doCert          = certfile != NULL;
@@ -1145,16 +1276,13 @@ static int keyutil_main(
 	    return 255;
 	}
     printf("Opened %s for writing\n", certreqfile);
-	if (passwordfile) {
-	    pwdata.source = PW_FROMFILE;
-	    pwdata.data = (char *)passwordfile;
-    } else {
-        pwdata.source = PW_PLAINTEXT;
-        pwdata.data = (char *)"badpassword";
+	if (access_pwd_file) {
+	    accessPassword.source = PW_FROMFILE;
+	    accessPassword.data = (char *)access_pwd_file;
     }
 
 	privkey = GenerateRSAPrivateKey(keytype, slot, 
-			keysize, 65537L, (char *)noisefile, &pubkey, &pwdata);
+			keysize, 65537L, (char *)noisefile, &pubkey, &accessPassword);
 	
 	if (!privkey) {
 	    PR_fprintf(PR_STDERR,
@@ -1209,7 +1337,7 @@ static int keyutil_main(
 	    LL_USHR(now, now, 19);
 	    LL_L2UI(serialNumber, now);
 		
-	    privkey->wincx = &pwdata;
+	    privkey->wincx = &accessPassword;
 	    PR_Close(outFile);
 	   
 	    inFile  = PR_Open(certreqfile, PR_RDONLY, 0);
@@ -1235,7 +1363,7 @@ static int keyutil_main(
 	    /* issuerName == subject */
 	    rv = CreateCert(certHandle, 
 	        "tempnickname", inFile, outFile,
-			privkey, &pwdata, hashAlgTag,
+			privkey, &accessPassword, hashAlgTag,
 	        serialNumber, warpmonths, validityMonths,
 	        NULL, NULL, ascii, PR_TRUE, NULL,
 	        &cert);
@@ -1255,7 +1383,7 @@ static int keyutil_main(
 	
 	     /* XXX temporary hack for fips - must log in to get priv key */
 	    if (slot && PK11_NeedLogin(slot)) {
-	        SECStatus newrv = PK11_Authenticate(slot, PR_TRUE, &pwdata);
+	        SECStatus newrv = PK11_Authenticate(slot, PR_TRUE, &accessPassword);
 	        if (newrv != SECSuccess) {
 	            SECU_PrintError(progName, "could not authenticate to token %s.",
 	                        PK11_GetTokenName(slot));
@@ -1272,7 +1400,7 @@ static int keyutil_main(
 	    		NULL,     // Usage.arg,    --> certificateUsageSSLServer
 	    		PR_TRUE, // VerifySig,
 	    		PR_TRUE, // DetailedInfo,
-	            &pwdata);
+	            &accessPassword);
 	        if (rv != SECSuccess && PR_GetError() == SEC_ERROR_INVALID_ARGS) {
 	        	SECU_PrintError(progName, "validation failed");
 	            goto shutdown;
@@ -1285,11 +1413,9 @@ static int keyutil_main(
     	/* Two candidate tags to use: SEC_OID_DES_EDE3_CBC and
     	 * SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_3KEY_TRIPLE_DES_CBC
     	 */
-	    rv = KeyOut(keyoutfile,
-                passwordfile,
-                privkey, pubkey,
-	    		SEC_OID_DES_EDE3_CBC, 
-	    		&pwdata, ascii);
+	    rv = KeyOut(keyoutfile, key_pwd_file,
+                privkey, pubkey, SEC_OID_DES_EDE3_CBC, 
+	    		&accessPassword, ascii);
 	    if (rv != SECSuccess) {
 	    	SECU_PrintError(progName, "Failed to write the key");
 	    } else {
@@ -1321,7 +1447,7 @@ shutdown:
     }
 }
 
-/* $Id: keyutil.c,v 1.10 2008/03/23 10:09:40 emaldona Exp $ */
+/* $Id: keyutil.c,v 1.1 2008/05/01 01:06:25 emaldonado Exp $ */
 
 /* Key generation, encryption, and certificate utility code, based on
  * code from NSS's security utilities and the certutil application.  
@@ -1337,7 +1463,8 @@ int main(int argc, char **argv)
     	{ "subject",    required_argument, NULL, 's'},
     	{ "gkeysize",   required_argument, NULL, 'g'},
     	{ "validity",   required_argument, NULL, 'v'},
-        { "filepwd",    required_argument, NULL, 'f' },
+        { "encpwdfile", required_argument, NULL, 'e' },
+        { "filepwdnss", required_argument, NULL, 'f' },
         { "digest",     required_argument, NULL, 'd' },
         { "znoisefile", required_argument, NULL, 'z' },
         { "input",      required_argument, NULL, 'i' }, /* key in */
@@ -1355,7 +1482,8 @@ int main(int argc, char **argv)
     char *keyfile = NULL;
     char *outfile = NULL;
     char *subject = NULL;
-    char *passwordfile = NULL;
+    char *access_pwd_file = NULL;
+    char *key_pwd_file = NULL;
     char *digestAlgorithm = "md5";
     char *keyoutfile = 0;
     PRBool ascii = PR_FALSE;
@@ -1366,7 +1494,7 @@ int main(int argc, char **argv)
     
     progName = argv[0];
     
-    while ((optc = getopt_long(argc, argv, "ac:s:g:v:f:d:z:i:p:o:k:", options, NULL)) != -1) {
+    while ((optc = getopt_long(argc, argv, "ac:s:g:v:e:f:d:z:i:p:o:k:", options, NULL)) != -1) {
         switch (optc) {
         case 'a':
         	ascii = PR_TRUE;
@@ -1401,9 +1529,13 @@ int main(int argc, char **argv)
         	validity_months = atoi(optarg);
         	printf("valid for %d months\n", validity_months);
         	break;
+        case 'e':
+        	key_pwd_file = strdup(optarg);
+        	printf("key encryption password from = %s\n", key_pwd_file);
+        	break;
         case 'f':
-        	passwordfile = strdup(optarg);
-        	printf("password from = %s\n", passwordfile);
+        	access_pwd_file = strdup(optarg);
+        	printf("module access password from = %s\n", access_pwd_file);
         	break;
         case 'd':
             digestAlgorithm = strdup(optarg);
@@ -1453,19 +1585,19 @@ int main(int argc, char **argv)
     	printf("\ncmd_CertReq\n");
         /* certfile NULL signals only the request is needed */
         rv = keyutil_main(certHandle,
-                noisefile, passwordfile, subject,
-                keysize, warpmonths, validity_months,
+                noisefile, access_pwd_file, key_pwd_file,
+                subject, keysize, warpmonths, validity_months,
                 ascii, outfile, NULL, keyoutfile);
         break;
     case cmd_CreateNewCert:
     	printf("\ncmd_CreateNewCert\n");
 	    rv = keyutil_main(certHandle,
-                noisefile, passwordfile, subject,
-                keysize, warpmonths, validity_months,
+                noisefile, access_pwd_file, key_pwd_file,
+                subject, keysize, warpmonths, validity_months,
                 ascii, "tmprequest", outfile, keyoutfile);
         break;
     case cmd_ImportKey:
-    	rv = ImportKey(certHandle, passwordfile, keyfile, PR_TRUE);
+    	rv = ImportKey(certHandle, key_pwd_file, keyfile, PR_TRUE);
     	break;
     default:
     	printf("\nEntered an inconsistent state, bailing out\n");
