@@ -775,7 +775,7 @@ sub makeCertNSS
     $args .= "-g $bits ";
     $args .= "-v $months "; 
     $args .= "-f $pwdfile " if $pwdfile;
-    $args .= "-z $noisefile "; 
+    $args .= "-z $noisefile " if $noisefile;
     $args .= "-d $modNssDbDir "; 
     $args .= "-o $certfile";
     
@@ -811,9 +811,9 @@ sub genRequestNSS
     $args .= "-a ";              ## using ascii 
     $args .= "-k rsa ";
     $args .= "-g $bits ";
-    $args .= "-f $pwdfile ";
+    $args .= "-f $pwdfile "   if $pwdfile;
     $args .= "-v $months "; 
-    $args .= "-z $noisefile ";
+    $args .= "-z $noisefile " if $noisefile;
     
     $args .= " > $csrfile ";
     
@@ -849,7 +849,9 @@ sub makeCertOpenSSL
     $args   .= "-s $subject ";
     $args   .= "-v $months "; 
     $args   .= "-z $noisefile ";
-    $args   .= "-f $pwdfile "     if $pwdfile; # sometimes there is no password
+    $args   .= "-e $pwdfile " if $pwdfile; 
+              # there is no password when the
+              # user wants the key in the clar
     $args   .= "-o $certfile ";
     $args   .= "-k $keyfile";
 
@@ -893,13 +895,15 @@ sub genRequestOpenSSL
             
     # build the arguments for a gen request call
     my $cmd="$ssltop/keyutil";
-    my $args = " -c genreq ";
+    my $args = "-c genreq ";
     $args   .= "-g $bits "; 
     $args   .= "-s $subject ";
     $args   .= "-v $months "; 
     $args   .= "-o $csrfile ";
     $args   .= "-k $keyfile "; 
-    $args   .= "-f $pwdfile "    if $pwdfile;
+    $args   .= "-e $pwdfile " if $pwdfile;
+              # there is no password when the
+              # user wants the key in the clar
     $args   .= "-z $noisefile "  if $noisefile;
  
     nssUtilCmd($debug, $cmd, $args,
