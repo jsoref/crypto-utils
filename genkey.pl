@@ -627,8 +627,13 @@ sub savePassword
 }
 
 # Prompts for key encryption password 
+# When using NSS skip prompting as the
+# key is protected in the database via
+# the module access password.
 sub keyPasswordWindow
 {
+	return "Next "if $nss;
+	
     my $message = <<EOT;
 At this stage you can set the passphrase on your private key. If you
 set the passphrase you will have to enter it every time the server
@@ -737,10 +742,9 @@ EOT
 #
 sub nssUtilCmd {
     
-    my ($debug, $cmd, $args, $msg) = @_;
+    my ($cmd, $args, $debug) = @_;
 
     Newt::Suspend();
-    print STDOUT "$msg" if $msg;
     print STDOUT "$cmd $args"."\n";
     if ($debug) {
     	system("gdb $cmd");
@@ -752,7 +756,7 @@ sub nssUtilCmd {
 }
 
 #
-# make certificate using the database
+# make a certificate using the database
 #
 sub makeCertNSS
 {
@@ -779,8 +783,7 @@ sub makeCertNSS
     $args .= "-d $modNssDbDir "; 
     $args .= "-o $certfile";
     
-    nssUtilCmd($debug, $cmd, $args,
-               "\nGenerating the cert\n\n");
+    nssUtilCmd($cmd, $args, $debug);
 
     unlink($noisefile) unless $debug;
     
@@ -812,13 +815,11 @@ sub genRequestNSS
     $args .= "-k rsa ";
     $args .= "-g $bits ";
     $args .= "-f $pwdfile "   if $pwdfile;
-    $args .= "-v $months "; 
+    $args .= "-v $months ";
     $args .= "-z $noisefile " if $noisefile;
+    $args .= "-o $csrfile ";
     
-    $args .= " > $csrfile ";
-    
-    nssUtilCmd($debug, $cmd, $args,
-               "\nGenerating cert request (may take some time)\n\n");
+    nssUtilCmd($cmd, $args, $debug);
 
     unlink($noisefile) unless $debug;
     
@@ -831,8 +832,8 @@ sub genRequestNSS
     }
 }
 
-# Generate a CA certificate file saving to private key to a file
-# Do not leave keys or certs in the database, use keyutil instaed of certutil.
+# Generate a CA certificate file.
+# Use keyutil which supports exporting the key.
 sub makeCertOpenSSL
 {
     my ($keyfile, $certfile, # output
@@ -855,8 +856,7 @@ sub makeCertOpenSSL
     $args   .= "-o $certfile ";
     $args   .= "-k $keyfile";
 
-    nssUtilCmd($debug, $cmd, $args, 
-        "\nPlease wait - generating the cert (this may take some time)\n\n");    
+    nssUtilCmd($cmd, $args, $debug);    
 
     if (!-f $certfile) {
         Newt::newtWinMessage("Error", "Close", 
@@ -883,8 +883,7 @@ sub makeCertOpenSSL
 
 # Create a certificate-signing request file that can be submitted to a 
 # Certificate Authority (CA) for processing into a finished certificate.
-# Do not use the nss database, use keyutil instead of certutil. Export
-# the key if possible.
+# Use keyutil which exports key.
 sub genRequestOpenSSL
 {
     my ($keyfile,$csrfile, # output
@@ -906,8 +905,7 @@ sub genRequestOpenSSL
               # user wants the key in the clar
     $args   .= "-z $noisefile "  if $noisefile;
  
-    nssUtilCmd($debug, $cmd, $args,
-        "\nPlease wait - generating the request (may take some time)\n\n");
+    nssUtilCmd($cmd, $args, $debug);
          
     unlink($noisefile) unless $debug;
     Newt::Resume();
@@ -1125,8 +1123,7 @@ sub genReqWindow
     return $ret unless ($ret eq "Next");
 
     if ($nss) {
-        genRequestNSS($csrfile,
-                      $subject, 730, $randfile, $tmpPasswordFile);
+        genRequestNSS($csrfile, $subject, 730, $randfile, "");
     } else {
         genRequestOpenSSL($keyfile, $csrfile,
                           $subject, 730, $randfile, $tmpPasswordFile);
@@ -1139,7 +1136,7 @@ sub genReqWindow
             if ($nss) {
                 makeCertNSS($certfile,
                             $subject, $cert_days, $nickname,
-                            $randfile, $tmpPasswordFile); 
+                            $randfile, ""); 
             } else {
                 makeCertOpenSSL($keyfile,$certfile,
                                 $subject, $cert_days,
@@ -1251,7 +1248,7 @@ sub genCertWindow
     if ($nss) {
         makeCertNSS($certfile, # output
             $subject,$cert_days,$nickname,
-            $randfile,$tmpPasswordFile);
+            $randfile,"");
     } else {
         makeCertOpenSSL($keyfile,$certfile, # output
             $subject,$cert_days,
@@ -1279,7 +1276,7 @@ sub genCACertWindow
 
     if ($nss) {
         makeCertNSS($certfile,$subject,730,$nickname,
-                    $randfile,$tmpPasswordFile);
+                    $randfile,"");
     } else {
         makeCertOpenSSL($keyfile,$certfile,$subject,730,
                         $randfile,$tmpPasswordFile);
