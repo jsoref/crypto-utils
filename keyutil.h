@@ -65,7 +65,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #ifndef _KEYUTIL_H
-#define	_KEYUTIL_H
+#define _KEYUTIL_H
 
 #include "secutil.h"
 
@@ -94,5 +94,5 @@ extern SECStatus
 AddExtensions(void *extHandle, const char *emailAddrs, const char *dnsNames,
               certutilExtnList extList);
 
-#endif	/* _KEYUTIL_H */
+#endif  /* _KEYUTIL_H */
 

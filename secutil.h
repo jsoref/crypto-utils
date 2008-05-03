@@ -46,12 +46,12 @@
 #include <secder.h>
 #include <stdio.h>
 
-#define SEC_CT_PRIVATE_KEY		"private-key"
-#define SEC_CT_PUBLIC_KEY		"public-key"
-#define SEC_CT_CERTIFICATE		"certificate"
-#define SEC_CT_CERTIFICATE_REQUEST	"certificate-request"
-#define SEC_CT_PKCS7			"pkcs7"
-#define SEC_CT_CRL			"crl"
+#define SEC_CT_PRIVATE_KEY      "private-key"
+#define SEC_CT_PUBLIC_KEY       "public-key"
+#define SEC_CT_CERTIFICATE      "certificate"
+#define SEC_CT_CERTIFICATE_REQUEST  "certificate-request"
+#define SEC_CT_PKCS7            "pkcs7"
+#define SEC_CT_CRL          "crl"
 
 #define NS_CERTREQ_HEADER "-----BEGIN NEW CERTIFICATE REQUEST-----"
 #define NS_CERTREQ_TRAILER "-----END NEW CERTIFICATE REQUEST-----"
@@ -64,7 +64,7 @@
 
 /* From libsec/pcertdb.c --- it's not declared in sec.h */
 extern SECStatus SEC_AddPermCertificate(CERTCertDBHandle *handle,
-		SECItem *derCert, char *nickname, CERTCertTrust *trust);
+        SECItem *derCert, char *nickname, CERTCertTrust *trust);
 
 
 #ifdef SECUTIL_NEW
@@ -76,10 +76,10 @@ typedef int (*SECU_PPFunc)(FILE *out, SECItem *item, char *msg, int level);
 
 typedef struct {
     enum {
-	PW_NONE = 0,
-	PW_FROMFILE = 1,
-	PW_PLAINTEXT = 2,
-	PW_EXTERNAL = 3
+    PW_NONE = 0,
+    PW_FROMFILE = 1,
+    PW_PLAINTEXT = 2,
+    PW_EXTERNAL = 3
     } source;
     char *data;
 } secuPWData;
@@ -123,7 +123,7 @@ extern PRBool SEC_BlindCheckPassword(char *password);
 ** The password is then checked using "chkpw".
 */
 extern char *SEC_GetPassword(FILE *in, FILE *out, char *msg,
-				      PRBool (*chkpw)(char *));
+                      PRBool (*chkpw)(char *));
 
 char *SECU_FilePasswd(PK11SlotInfo *slot, PRBool retry, void *arg);
 
@@ -165,9 +165,9 @@ extern char *SECU_ConfigDirectory(const char* base);
 */
 extern int
 SECU_GetClientAuthData(void *arg, PRFileDesc *fd,
-		       struct CERTDistNamesStr *caNames,
-		       struct CERTCertificateStr **pRetCert,
-		       struct SECKEYPrivateKeyStr **pRetKey);
+               struct CERTDistNamesStr *caNames,
+               struct CERTCertificateStr **pRetCert,
+               struct SECKEYPrivateKeyStr **pRetKey);
 
 /* print out an error message */
 extern void SECU_PrintError(char *progName, char *msg, ...);
@@ -182,15 +182,15 @@ extern const char * SECU_Strerror(PRErrorCode errNum);
  * failure at time == now */
 extern void
 SECU_printCertProblems(FILE *outfile, CERTCertDBHandle *handle, 
-	CERTCertificate *cert, PRBool checksig, 
-	SECCertificateUsage certUsage, void *pinArg, PRBool verbose);
+    CERTCertificate *cert, PRBool checksig, 
+    SECCertificateUsage certUsage, void *pinArg, PRBool verbose);
 
 /* revalidate the cert and print information about cert verification
  * failure at specified time */
 extern void
 SECU_printCertProblemsOnDate(FILE *outfile, CERTCertDBHandle *handle, 
-	CERTCertificate *cert, PRBool checksig, SECCertificateUsage certUsage, 
-	void *pinArg, PRBool verbose, PRTime datetime);
+    CERTCertificate *cert, PRBool checksig, SECCertificateUsage certUsage, 
+    void *pinArg, PRBool verbose, PRTime datetime);
 
 /* print out CERTVerifyLog info. */
 extern void
@@ -216,7 +216,7 @@ extern SECOidTag SECU_PrintObjectID(FILE *out, SECItem *oid, char *m, int level)
 
 /* Print AlgorithmIdentifier symbolically */
 extern void SECU_PrintAlgorithmID(FILE *out, SECAlgorithmID *a, char *m,
-				  int level);
+                  int level);
 
 /* Print SECItem as hex */
 extern void SECU_PrintAsHex(FILE *out, SECItem *i, const char *m, int level);
@@ -237,7 +237,7 @@ extern void SECU_PrintUTCTime(FILE *out, SECItem *t, char *m, int level);
  * afterward; otherwise just print the formatted time string only.
  */
 extern void SECU_PrintGeneralizedTime(FILE *out, SECItem *t, char *m,
-				      int level);
+                      int level);
 
 /*
  * Format and print the UTC or Generalized Time "t".  If the tag message
@@ -259,7 +259,7 @@ int SECU_CheckCertNameExists(CERTCertDBHandle *handle, char *nickname);
 
 /* Dump contents of cert req */
 extern int SECU_PrintCertificateRequest(FILE *out, SECItem *der, char *m,
-	int level);
+    int level);
 
 /* Dump contents of certificate */
 extern int SECU_PrintCertificate(FILE *out, SECItem *der, char *m, int level);
@@ -285,14 +285,14 @@ extern int SECU_PrintFingerprints(FILE *out, SECItem *derCert, char *m,
 
 /* Pretty-print any PKCS7 thing */
 extern int SECU_PrintPKCS7ContentInfo(FILE *out, SECItem *der, char *m, 
-				      int level);
+                      int level);
 
 /* Init PKCS11 stuff */
 extern SECStatus SECU_PKCS11Init(PRBool readOnly);
 
 /* Dump contents of signed data */
 extern int SECU_PrintSignedData(FILE *out, SECItem *der, char *m, int level,
-				SECU_PPFunc inner);
+                SECU_PPFunc inner);
 
 /* Print cert data and its trust flags */
 extern SECStatus SEC_PrintCertificateAndTrust(CERTCertificate *cert,
@@ -312,7 +312,7 @@ extern void SECU_PrintPrivKeyUsagePeriodExtension(FILE *out, SECItem *value,
                                  char *msg, int level);
 
 extern void SECU_PrintExtensions(FILE *out, CERTCertExtension **extensions,
-				 char *msg, int level);
+                 char *msg, int level);
 
 extern void SECU_PrintName(FILE *out, CERTName *name, char *msg, int level);
 
@@ -347,12 +347,12 @@ extern SECStatus SECU_StoreCRL(PK11SlotInfo *slot, SECItem *derCrl,
 ** MD5 hashing algorithm. This routine first computes a digital signature
 ** using SEC_SignData, then wraps it with an CERTSignedData and then der
 ** encodes the result.
-**	"arena" is the memory arena to use to allocate data from
+**  "arena" is the memory arena to use to allocate data from
 **      "sd" returned CERTSignedData 
-** 	"result" the final der encoded data (memory is allocated)
-** 	"buf" the input data to sign
-** 	"len" the amount of data to sign
-** 	"pk" the private key to encrypt with
+**  "result" the final der encoded data (memory is allocated)
+**  "buf" the input data to sign
+**  "len" the amount of data to sign
+**  "pk" the private key to encrypt with
 */
 extern SECStatus SECU_DerSignDataCRL(PRArenaPool *arena, CERTSignedData *sd,
                                      unsigned char *buf, int len,
@@ -436,7 +436,7 @@ typedef struct
 /*  fill the "arg" and "activated" fields for each flag  */
 SECStatus 
 SECU_ParseCommandLine(int argc, char **argv, char *progName,
-		      const secuCommand *cmd);
+              const secuCommand *cmd);
 char *
 SECU_GetOptionArg(const secuCommand *cmd, int optionNum);
 

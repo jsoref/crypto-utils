@@ -111,15 +111,15 @@ static char *warn_address = "root";
  * Semantics are similar to asctime. 
  */
 char * AsciiTime(PRTime time)
-{	
-	PRExplodedTime printable;
-	char *timebuf;
-	
-	PR_ExplodeTime(time, PR_GMTParameters, &printable);
-	timebuf = PORT_Alloc(TIME_BUF_SIZE);
-	(void) PR_FormatTime(timebuf, TIME_BUF_SIZE, "%a %b %d %H:%M:%S %Y", &printable);
-	if (strlen(timebuf) < TIME_BUF_SIZE) timebuf[strlen(timebuf)] = '\0';
-	return (timebuf);
+{   
+    PRExplodedTime printable;
+    char *timebuf;
+    
+    PR_ExplodeTime(time, PR_GMTParameters, &printable);
+    timebuf = PORT_Alloc(TIME_BUF_SIZE);
+    (void) PR_FormatTime(timebuf, TIME_BUF_SIZE, "%a %b %d %H:%M:%S %Y", &printable);
+    if (strlen(timebuf) < TIME_BUF_SIZE) timebuf[strlen(timebuf)] = '\0';
+    return (timebuf);
 }
 
 /* Uses the password passed in the -f(pwfile) argument of the command line.  
@@ -173,19 +173,19 @@ static int warning(FILE *out, const char *filename, const char *hostname,
     /* Note that filename can be the cert nickname. */
     int renew = 1;
     char subj[50];
-	PRTime prtimeDiff;
-	
-	LL_SUB(prtimeDiff, end, start);
+    PRTime prtimeDiff;
+    
+    LL_SUB(prtimeDiff, end, start);
     
     if ( LL_CMP(start, >, now) ) {   
         strcpy(subj, "is not yet valid");
         renew = 0;
     } else if (LL_EQ(now, end)) {
-    	strcpy(subj, "will expire today");
+        strcpy(subj, "will expire today");
     } else if (LL_EQ(prtimeDiff, 1)) {
-    	sprintf(subj, "will expire tomorrow");
+        sprintf(subj, "will expire tomorrow");
     } else if (LL_CMP(prtimeDiff, <, warn_period)) {
-    	sprintf(subj, "will expire on %s", AsciiTime(end));
+        sprintf(subj, "will expire on %s", AsciiTime(end));
         {
             int days; /* days till expiry */
             LL_L2I(days, prtimeDiff);
@@ -276,8 +276,8 @@ static int check_cert(const char *name, int byNickname, int quiet)
 
     /* parse the cert */
     cert = byNickname 
-    	? CERT_FindCertByNickname(CERT_GetDefaultCertDB(), (char *)name)
-    	: PEMUTIL_PEM_read_X509(name);
+        ? CERT_FindCertByNickname(CERT_GetDefaultCertDB(), (char *)name)
+        : PEMUTIL_PEM_read_X509(name);
     if (cert == NULL) return -1;
     
     /* determine the validity period of the cert. */
@@ -304,7 +304,7 @@ cleanup:
     if (!doWarning) return -1;
 
     return warning(stdout, name, cname, validity, 
-    		       notBefore, notAfter, PR_Now(), quiet);
+                   notBefore, notAfter, PR_Now(), quiet);
 }
 
 int main(int argc, char **argv)
@@ -375,16 +375,16 @@ int main(int argc, char **argv)
             PK11_SetPasswordFunc(GetModulePassword);  
         }
     } else {
-    	/* cert in a pem file */
+        /* cert in a pem file */
         char *certDir = getenv("SSL_DIR"); /* Look in $SSL_DIR */
         if (!certDir) {
             certDir = "/etc/pki/nssdb";
         }
-    	if (NSS_Initialize(certDir, certDBPrefix, keyDBPrefix, 
+        if (NSS_Initialize(certDir, certDBPrefix, keyDBPrefix, 
                    SECMOD_DB, NSS_INIT_READONLY) != SECSuccess) {
-    		printf("NSS_Init(\"%s\") failed\n", certDir);
+            printf("NSS_Init(\"%s\") failed\n", certDir);
             return EXIT_FAILURE;
-    	}
+        }
     }
 
     /* When byNickname is 1 argv[optind] is a nickname otherwise a filename. */ 

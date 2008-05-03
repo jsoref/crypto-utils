@@ -123,26 +123,26 @@ SECU_PrintErrMsg(FILE *out, int level, char *progName, char *msg, ...)
     fprintf(out, "%s: ", progName);
     vfprintf(out, msg, args);
     if (errString != NULL && PORT_Strlen(errString) > 0)
-	fprintf(out, ": %s\n", errString);
+    fprintf(out, ": %s\n", errString);
     else
-	fprintf(out, ": error %d\n", (int)err);
+    fprintf(out, ": error %d\n", (int)err);
 
     va_end(args);
 }
 
 void SECU_PrintError(char *progName, char *msg, ...)
 {
-	SECU_PrintErrMsg(stderr, 0, progName, msg);
+    SECU_PrintErrMsg(stderr, 0, progName, msg);
 }
 
-#define INDENT_MULT	4
+#define INDENT_MULT 4
 void
 SECU_Indent(FILE *out, int level)
 {
     int i;
 
     for (i = 0; i < level; i++) {
-	fprintf(out, "    ");
+    fprintf(out, "    ");
     }
 }
 
@@ -162,25 +162,25 @@ SECU_PrintAsHex(FILE *out, SECItem *data, const char *m, int level)
     unsigned int limit = 15;
 
     if ( m ) {
-	SECU_Indent(out, level); fprintf(out, "%s:\n", m);
-	level++;
+    SECU_Indent(out, level); fprintf(out, "%s:\n", m);
+    level++;
     }
     
     SECU_Indent(out, level); column = level*INDENT_MULT;
     if (!data->len) {
-	fprintf(out, "(empty)\n");
-	return;
+    fprintf(out, "(empty)\n");
+    return;
     }
     /* take a pass to see if it's all printable. */
     for (i = 0; i < data->len; i++) {
-	unsigned char val = data->data[i];
+    unsigned char val = data->data[i];
         if (!val || !isprint(val)) {
-	    isString = PR_FALSE;
-	    break;
-	}
-	if (isWhiteSpace && !isspace(val)) {
-	    isWhiteSpace = PR_FALSE;
-	}
+        isString = PR_FALSE;
+        break;
+    }
+    if (isWhiteSpace && !isspace(val)) {
+        isWhiteSpace = PR_FALSE;
+    }
     }
 
     /* Short values, such as bit strings (which are printed with this
@@ -191,46 +191,46 @@ SECU_PrintAsHex(FILE *out, SECItem *data, const char *m, int level)
     */
     if (!isString || data->len <= 4) {
       for (i = 0; i < data->len; i++) {
-	if (i != data->len - 1) {
-	    fprintf(out, "%02x:", data->data[i]);
-	    column += 3;
-	} else {
-	    fprintf(out, "%02x", data->data[i]);
-	    column += 2;
-	    break;
-	}
-	if (column > 76 || (i % 16 == limit)) {
-	    secu_Newline(out);
-	    SECU_Indent(out, level); 
-	    column = level*INDENT_MULT;
-	    limit = i % 16;
-	}
+    if (i != data->len - 1) {
+        fprintf(out, "%02x:", data->data[i]);
+        column += 3;
+    } else {
+        fprintf(out, "%02x", data->data[i]);
+        column += 2;
+        break;
+    }
+    if (column > 76 || (i % 16 == limit)) {
+        secu_Newline(out);
+        SECU_Indent(out, level); 
+        column = level*INDENT_MULT;
+        limit = i % 16;
+    }
       }
       printedHex = PR_TRUE;
     }
     if (isString && !isWhiteSpace) {
-	if (printedHex != PR_FALSE) {
-	    secu_Newline(out);
-	    SECU_Indent(out, level); column = level*INDENT_MULT;
-	}
-	for (i = 0; i < data->len; i++) {
-	    unsigned char val = data->data[i];
-
-	    if (val) {
-		fprintf(out,"%c",val);
-		column++;
-	    } else {
-		column = 77;
-	    }
-	    if (column > 76) {
-		secu_Newline(out);
-        	SECU_Indent(out, level); column = level*INDENT_MULT;
-	    }
-	}
+    if (printedHex != PR_FALSE) {
+        secu_Newline(out);
+        SECU_Indent(out, level); column = level*INDENT_MULT;
     }
-	    
+    for (i = 0; i < data->len; i++) {
+        unsigned char val = data->data[i];
+
+        if (val) {
+        fprintf(out,"%c",val);
+        column++;
+        } else {
+        column = 77;
+        }
+        if (column > 76) {
+        secu_Newline(out);
+            SECU_Indent(out, level); column = level*INDENT_MULT;
+        }
+    }
+    }
+        
     if (column != level*INDENT_MULT) {
-	secu_Newline(out);
+    secu_Newline(out);
     }
 }
 
@@ -243,21 +243,21 @@ SECU_PrintObjectID(FILE *out, SECItem *oid, char *m, int level)
     
     oiddata = SECOID_FindOID(oid);
     if (oiddata != NULL) {
-	const char *name = oiddata->desc;
-	SECU_Indent(out, level);
-	if (m != NULL)
-	    fprintf(out, "%s: ", m);
-	fprintf(out, "%s\n", name);
-	return oiddata->offset;
+    const char *name = oiddata->desc;
+    SECU_Indent(out, level);
+    if (m != NULL)
+        fprintf(out, "%s: ", m);
+    fprintf(out, "%s\n", name);
+    return oiddata->offset;
     } 
     oidString = CERT_GetOidString(oid);
     if (oidString) {
-	SECU_Indent(out, level);
-	if (m != NULL)
-	    fprintf(out, "%s: ", m);
-	fprintf(out, "%s\n", oidString);
-	PR_smprintf_free(oidString);
-	return SEC_OID_UNKNOWN;
+    SECU_Indent(out, level);
+    if (m != NULL)
+        fprintf(out, "%s: ", m);
+    fprintf(out, "%s\n", oidString);
+    PR_smprintf_free(oidString);
+    return SEC_OID_UNKNOWN;
     }
     SECU_PrintAsHex(out, oid, m, level);
     return SEC_OID_UNKNOWN;
@@ -287,29 +287,29 @@ secu_StdinToItem(SECItem *dst)
     dst->data = NULL;
 
     while (notDone) {
-	numBytes = PR_Read(PR_STDIN, buf, sizeof(buf));
+    numBytes = PR_Read(PR_STDIN, buf, sizeof(buf));
 
-	if (numBytes < 0) {
-	    return SECFailure;
-	}
+    if (numBytes < 0) {
+        return SECFailure;
+    }
 
-	if (numBytes == 0)
-	    break;
+    if (numBytes == 0)
+        break;
 
-	if (dst->data) {
-	    unsigned char * p = dst->data;
-	    dst->data = (unsigned char*)PORT_Realloc(p, dst->len + numBytes);
-	    if (!dst->data) {
-	    	PORT_Free(p);
-	    }
-	} else {
-	    dst->data = (unsigned char*)PORT_Alloc(numBytes);
-	}
-	if (!dst->data) {
-	    return SECFailure;
-	}
-	PORT_Memcpy(dst->data + dst->len, buf, numBytes);
-	dst->len += numBytes;
+    if (dst->data) {
+        unsigned char * p = dst->data;
+        dst->data = (unsigned char*)PORT_Realloc(p, dst->len + numBytes);
+        if (!dst->data) {
+            PORT_Free(p);
+        }
+    } else {
+        dst->data = (unsigned char*)PORT_Alloc(numBytes);
+    }
+    if (!dst->data) {
+        return SECFailure;
+    }
+    PORT_Memcpy(dst->data + dst->len, buf, numBytes);
+    dst->len += numBytes;
     }
 
     return SECSuccess;
@@ -323,24 +323,24 @@ SECU_FileToItem(SECItem *dst, PRFileDesc *src)
     PRStatus prStatus;
 
     if (src == PR_STDIN)
-	    return secu_StdinToItem(dst);
+        return secu_StdinToItem(dst);
 
     prStatus = PR_GetOpenFileInfo(src, &info);
 
     if (prStatus != PR_SUCCESS) {
-	    PORT_SetError(SEC_ERROR_IO);
-	    return SECFailure;
+        PORT_SetError(SEC_ERROR_IO);
+        return SECFailure;
     }
 
     /* XXX workaround for 3.1, not all utils zero dst before sending */
     dst->data = 0;
     if (!SECITEM_AllocItem(NULL, dst, info.size))
-	    goto loser;
+        goto loser;
 
     numBytes = PR_Read(src, dst->data, info.size);
     if (numBytes != info.size) {
-	    PORT_SetError(SEC_ERROR_IO);
-	    goto loser;
+        PORT_SetError(SEC_ERROR_IO);
+        goto loser;
     }
 
     return SECSuccess;
@@ -355,56 +355,56 @@ SECU_ReadDERFromFile(SECItem *der, PRFileDesc *inFile, PRBool ascii)
 {
     SECStatus rv;
     if (ascii) {
-	/* First convert ascii to binary */
-	SECItem filedata;
-	char *asc, *body;
+    /* First convert ascii to binary */
+    SECItem filedata;
+    char *asc, *body;
 
-	/* Read in ascii data */
-	rv = SECU_FileToItem(&filedata, inFile);
-	asc = (char *)filedata.data;
-	if (!asc) {
-	    fprintf(stderr, "unable to read data from input file\n");
-	    return SECFailure;
-	}
+    /* Read in ascii data */
+    rv = SECU_FileToItem(&filedata, inFile);
+    asc = (char *)filedata.data;
+    if (!asc) {
+        fprintf(stderr, "unable to read data from input file\n");
+        return SECFailure;
+    }
 
-	/* check for headers and trailers and remove them */
-	if ((body = strstr(asc, "-----BEGIN")) != NULL) {
-	    char *trailer = NULL;
-	    asc = body;
-	    body = PORT_Strchr(body, '\n');
-	    if (!body)
-		    body = PORT_Strchr(asc, '\r'); /* maybe this is a MAC file */
-	    if (body)
-		    trailer = strstr(++body, "-----END");
-	    if (trailer != NULL) {
-		    *trailer = '\0';
-	    } else {
-		    fprintf(stderr, "input has header but no trailer\n");
-		    PORT_Free(filedata.data);
-		    return SECFailure;
-	    }
-	} else {
-	    body = asc;
-	}
-     
-	/* Convert to binary */
-	rv = ATOB_ConvertAsciiToItem(der, body);
-	if (rv) {
-	    fprintf(stderr, "error converting ascii to binary (%d)\n",
-		    PORT_GetError());
-	    PORT_Free(filedata.data);
-	    return SECFailure;
-	}
-
-	PORT_Free(filedata.data);
+    /* check for headers and trailers and remove them */
+    if ((body = strstr(asc, "-----BEGIN")) != NULL) {
+        char *trailer = NULL;
+        asc = body;
+        body = PORT_Strchr(body, '\n');
+        if (!body)
+            body = PORT_Strchr(asc, '\r'); /* maybe this is a MAC file */
+        if (body)
+            trailer = strstr(++body, "-----END");
+        if (trailer != NULL) {
+            *trailer = '\0';
+        } else {
+            fprintf(stderr, "input has header but no trailer\n");
+            PORT_Free(filedata.data);
+            return SECFailure;
+        }
     } else {
-	    /* Read in binary der */
-	    rv = SECU_FileToItem(der, inFile);
-	    if (rv) {
-	        fprintf(stderr, "error converting der (%d)\n", 
-		        PORT_GetError());
-	        return SECFailure;
-	    }
+        body = asc;
+    }
+     
+    /* Convert to binary */
+    rv = ATOB_ConvertAsciiToItem(der, body);
+    if (rv) {
+        fprintf(stderr, "error converting ascii to binary (%d)\n",
+            PORT_GetError());
+        PORT_Free(filedata.data);
+        return SECFailure;
+    }
+
+    PORT_Free(filedata.data);
+    } else {
+        /* Read in binary der */
+        rv = SECU_FileToItem(der, inFile);
+        if (rv) {
+            fprintf(stderr, "error converting der (%d)\n", 
+                PORT_GetError());
+            return SECFailure;
+        }
     }
     return SECSuccess;
 }
@@ -440,12 +440,12 @@ void
 SECU_SECItemToHex(const SECItem * item, char * dst)
 {
     if (dst && item && item->data) {
-	    unsigned char * src = item->data;
-	    unsigned int    len = item->len;
-	    for (; len > 0; --len, dst += 2) {
-	        sprintf(dst, "%02x", *src++);
-	    }
-	    *dst = '\0';
+        unsigned char * src = item->data;
+        unsigned int    len = item->len;
+        for (; len > 0; --len, dst += 2) {
+            sprintf(dst, "%02x", *src++);
+        }
+        *dst = '\0';
     }
 }
 

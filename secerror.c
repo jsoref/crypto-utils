@@ -36,7 +36,7 @@
 #include <nspr.h>
 
 struct tuple_str {
-    PRErrorCode	 errNum;
+    PRErrorCode  errNum;
     const char * errString;
 };
 
@@ -89,12 +89,12 @@ SECU_Strerror(PRErrorCode errNum) {
             }
             lastNum = num;
         }
-	    initDone = 1;
+        initDone = 1;
     }
 
     /* Do binary search of table. */
     while (low + 1 < high) {
-    	i = (low + high) / 2;
+        i = (low + high) / 2;
         num = errStrings[i].errNum;
         if (errNum == num) 
             return errStrings[i].errString;

@@ -85,7 +85,7 @@
  */
 extern CERTCertificate *
 __CERT_NewTempCertificate(CERTCertDBHandle *handle, SECItem *derCert,
-			  char *nickname, PRBool isperm, PRBool copyDER);
+              char *nickname, PRBool isperm, PRBool copyDER);
 
 #define CERT_NewTempCertificate __CERT_NewTempCertificate
 
@@ -109,13 +109,13 @@ static SECStatus FileToItem(SECItem *dst, PRFileDesc *src)
     prStatus = PR_GetOpenFileInfo(src, &info);
 
     if (prStatus != PR_SUCCESS) {
-    	return SECFailure;
+        return SECFailure;
     }
 
     /* XXX workaround for 3.1, not all utils zero dst before sending */
     dst->data = 0;
     if (!SECITEM_AllocItem(NULL, dst, info.size))
-    	goto loser;
+        goto loser;
 
     numBytes = PR_Read(src, dst->data, info.size);
     if (numBytes != info.size)
@@ -135,52 +135,52 @@ static SECStatus ReadDERFromFile(SECItem *der, PRFileDesc *inFile, PRBool ascii)
 {
     SECStatus rv;
     if (ascii) {
-	    /* First convert ascii to binary */
-	    SECItem filedata;
-	    char *asc, *body;
-	
-	    /* Read in ascii data */
-	    rv = FileToItem(&filedata, inFile);
-	    asc = (char *)filedata.data;
-	    if (!asc) {
-	        return SECFailure;
-	    }
-	
-	    /* check for headers and trailers and remove them */
-		if ((body = strstr(asc, "-----BEGIN")) != NULL) {
-		    char *trailer = NULL;
-		    asc = body;
-		    body = PORT_Strchr(body, '\n');
-		    if (!body)
-	 	        body = PORT_Strchr(asc, '\r'); /* maybe this is a MAC file */
-		    if (body)
-		        trailer = strstr(++body, "-----END");
-		    if (trailer != NULL) {
-		        *trailer = '\0';
-		    } else {
-		        /*printf("input has header but no trailer\n");*/
-		        PORT_Free(filedata.data);
-		        return SECFailure;
-		   }
-		} else {
-			body = asc;
-		}
-	     
-		/* Convert to binary */
-		rv = ATOB_ConvertAsciiToItem(der, body);
-		if (rv) {
-		    /* printf("ATOB_ConvertAsciiToItem failed\n");*/
-		    PORT_Free(filedata.data);
-		    return SECFailure;
-		}
-	
-		PORT_Free(filedata.data);
+        /* First convert ascii to binary */
+        SECItem filedata;
+        char *asc, *body;
+    
+        /* Read in ascii data */
+        rv = FileToItem(&filedata, inFile);
+        asc = (char *)filedata.data;
+        if (!asc) {
+            return SECFailure;
+        }
+    
+        /* check for headers and trailers and remove them */
+        if ((body = strstr(asc, "-----BEGIN")) != NULL) {
+            char *trailer = NULL;
+            asc = body;
+            body = PORT_Strchr(body, '\n');
+            if (!body)
+                body = PORT_Strchr(asc, '\r'); /* maybe this is a MAC file */
+            if (body)
+                trailer = strstr(++body, "-----END");
+            if (trailer != NULL) {
+                *trailer = '\0';
+            } else {
+                /*printf("input has header but no trailer\n");*/
+                PORT_Free(filedata.data);
+                return SECFailure;
+           }
+        } else {
+            body = asc;
+        }
+         
+        /* Convert to binary */
+        rv = ATOB_ConvertAsciiToItem(der, body);
+        if (rv) {
+            /* printf("ATOB_ConvertAsciiToItem failed\n");*/
+            PORT_Free(filedata.data);
+            return SECFailure;
+        }
+    
+        PORT_Free(filedata.data);
     } else {
-    	/* Read in binary der */
-    	rv = FileToItem(der, inFile);
-    	if (rv) {
-    		return SECFailure;
-    	}
+        /* Read in binary der */
+        rv = FileToItem(der, inFile);
+        if (rv) {
+            return SECFailure;
+        }
     }
     return SECSuccess;
 }
@@ -202,11 +202,11 @@ PEMUTIL_PEM_read_X509(const char *filename)
 
     /* Read in a DER from a file, it is ascii */
     if (SECSuccess != ReadDERFromFile(&derCert, fd, PR_TRUE))
-    	goto cleanup;
+        goto cleanup;
    
     /* create a temporary cert in the database */
     cert = CERT_NewTempCertificate(CERT_GetDefaultCertDB(), 
-    		&derCert, NULL, PR_FALSE, PR_FALSE);
+            &derCert, NULL, PR_FALSE, PR_FALSE);
                /* noNickname, notPerm, noCopy */
  cleanup:
     if (fd) PR_Close(fd);
