@@ -121,10 +121,11 @@ my $test_mode = '';
 my $genreq_mode = '';
 my $ca_mode = '';
 my $cert_days = 30;
-my $nss='';
-my $debug='';
+my $nss ='';
+my $debug ='';
 my $modNssDbDir = '';
-my $nickname = '';
+my $nssNickname = '';
+my $nssDBPrefix = '';
 GetOptions('test|t' => \$test_mode, 
 	   'genreq' => \$genreq_mode,
        'days=i' => \$cert_days,
@@ -132,8 +133,7 @@ GetOptions('test|t' => \$test_mode,
        'debug|d'=> \$debug,
 	   'makeca' => \$ca_mode) or usage();
 usage() unless @ARGV != 0;
-$skip_random = $test_mode;
-$overwrite_key = $test_mode;
+$overwrite_key = $test_mode && !$nss;
 $servername = $ARGV[0];
 $randfile = $ssltop."/.rand.".$$;
 $tmpPasswordFile = ''; # none has been created yet
@@ -170,7 +170,7 @@ if (!$genreq_mode && -f $keyfile && !$overwrite_key) {
     exit 1;
 }
 
-# For mod_nss we need the database and nickname set
+# For mod_nss we need these variables set
 if ($nss) {
     # the configuration file is required
     if (!nssconfigFound()) {
@@ -182,7 +182,8 @@ if ($nss) {
     }
     
     $modNssDbDir = getModNSSDatabase();
-    $nickname = getNickname();
+    $nssNickname = getNSSNickname();
+    $nssDBPrefix = getNSSDBPrefix();
 }
 
 ######################################################################
@@ -217,7 +218,7 @@ if ($genreq_mode) {
 		keyPasswordWindow,
 		genCACertWindow,
 		);
-    $doingwhat="CA key generation";
+    $doingwhat="CA cert generation";
 } else {
     @windows = (welcomeWindow,
 		getkeysizeWindow,
@@ -227,12 +228,11 @@ if ($genreq_mode) {
 		whichCAWindow,
 		keyPasswordWindow,
 		genReqWindow,
-		genCertWindow,
         genReqWindow,
         genCertWindow,
         ### @EXTRA@ ### Leave this comment here.
         );
-    $doingwhat="testing request and cert generation";
+    $doingwhat="testing CSR and cert generation";
 }
 
 my $screen = 0;
@@ -337,17 +337,32 @@ sub getModNSSDatabase {
 }
 
 # Returns the rsa server name.
-sub getNickname {
+sub getNSSNickname {
 
     # Extract the value from the mod_nss configuration file.
     my $cmd ='/usr/bin/gawk \'/^NSSNickname/ { print $2 }\'' . " $nssconf";
-    my $nicknamefile = "nickname";
+    my $nicknamefile = "nssnickname";
     system("$cmd > $nicknamefile");
     open(NICK, "<$nicknamefile");  
     my $nickname = <NICK>; 
     unlink($nicknamefile);
+    my $prefix = $nss ? "modnss.test." : "modssl.test";
+    $nickname = $prefix . $nickname if $debug;
+    return $nickname;
+}
 
-    return "test-".$nickname;
+# Returns the nss database prefix
+sub getNSSDBPrefix {
+
+    # Extract the value from the mod_nss configuration file.
+    my $cmd ='/usr/bin/gawk \'/^NSSDBPrefix/ { print $2 }\'' . " $nssconf";
+    my $prefixfile = "dbprefix";
+    system("$cmd > $prefixfile");
+    open(PREFIX, "<$prefixfile");
+    my $prefix = <PREFIX>; 
+    unlink($prefixfile);
+
+    return $prefix;
 }
 
 # Erases and deletes the password file
@@ -517,7 +532,11 @@ EOT
 sub welcomeWindow()
 {
     my $name = $servername;
-    my $where = $nss ? $modNssDbDir : "$ssltop/private/$name.key";
+    my $where_key  = $nss
+        ? $modNssDbDir."key3.db" : "$ssltop/private/$name.key";
+    my $where_cert = $nss
+        ? $modNssDbDir."cert8.db" : "$ssltop/certs/$name.cert";
+    my $what = $nss ? "directory" : "file";
     my $message = <<EOT;
 You are now generating a new keypair which will be used to encrypt all
 SSL traffic to the server named $name. 
@@ -525,12 +544,12 @@ Optionally you can also create a certificate request and send it to a
 certificate authority (CA) for signing.
 
 The key will be stored in 
-    $where
+    $where_key
 The certificate stored in 
-    $ssltop/certs/$name.cert
+    $where_cert
 
-If the key generation fails, move the file 
-    $where 
+If the key generation fails, move the $what
+    $where_key 
 to a backup location and try again.
 EOT
 
@@ -774,13 +793,15 @@ sub makeCertNSS
     $args .= "-n $nickname ";
     $args .= "-s $subject "; 
     $args .= "-x ";              ## self-signed
-    $args .= "-t $trustargs "; 
+    $args .= "-t $trustargs ";
     $args .= "-k rsa ";
     $args .= "-g $bits ";
-    $args .= "-v $months "; 
+    $args .= "-v $months ";
+    $args .= "-a ";
     $args .= "-f $pwdfile " if $pwdfile;
     $args .= "-z $noisefile " if $noisefile;
     $args .= "-d $modNssDbDir "; 
+    $args .= "-p $nssDBPrefix" if $nssDBPrefix;
     $args .= "-o $certfile";
     
     nssUtilCmd($cmd, $args, $debug);
@@ -811,6 +832,7 @@ sub genRequestNSS
     
     $args .= "-s $subject ";
     $args .= "-d $modNssDbDir ";
+    $args .= "-p $nssDBPrefix " if $nssDDPrefix;
     $args .= "-a ";              ## using ascii 
     $args .= "-k rsa ";
     $args .= "-g $bits ";
@@ -849,7 +871,8 @@ sub makeCertOpenSSL
     $args   .= "-g $keysize ";
     $args   .= "-s $subject ";
     $args   .= "-v $months "; 
-    $args   .= "-z $noisefile ";
+    $args   .= "-a ";              ## using ascii 
+    $args   .= "-z $noisefile " if $noisefile;
     $args   .= "-e $pwdfile " if $pwdfile; 
               # there is no password when the
               # user wants the key in the clar
@@ -864,7 +887,6 @@ sub makeCertOpenSSL
                  "host:\n\nPress return to exit");
         unlink($noisefile) unless $debug;
         Newt::Finished();
-        clearTempFiles() unless $debug;
         exit 1;
     }
     if ($keyfile && (-f $keyfile)) {
@@ -874,11 +896,10 @@ sub makeCertOpenSSL
                              "$keyfile");
            Newt::Finished();
            unlink($noisefile) unless $debug;
-           clearTempFiles() unless $debug; 
            exit 1;
         }
     }
-    unlink($randfile);
+    unlink($noisefile) unless $debug;
 }
 
 # Create a certificate-signing request file that can be submitted to a 
@@ -1290,18 +1311,16 @@ sub getRandomDataWindow()
     my $randbits = $bits * 2;
 
 # Get some random data from truerand library
-#
-    if (!$skip_random) {
-	  FinishRoot();
-	  InitRoot(0);
-	  makerand($randbits,$randfile);
-	  FinishRoot();
+#    
+	FinishRoot();
+	InitRoot(0);
+	makerand($randbits,$randfile);
+	FinishRoot();
 
 # Get some random data from keystrokes
 #
-      Newt::Suspend();
-      system("$bindir/keyrand $randbits $randfile");
-      Newt::Resume();
-    }
+    Newt::Suspend();
+    system("$bindir/keyrand $randbits $randfile");
+    Newt::Resume();
     return "Next";
 }
