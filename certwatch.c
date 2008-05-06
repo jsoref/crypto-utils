@@ -316,8 +316,8 @@ int main(int argc, char **argv)
         { "address", required_argument, NULL, 'a' },
         { "configdir", required_argument, NULL, 'd' },
         { "passwordfile", required_argument, NULL, 'w' },
-        { "certdbprefix", required_argument, NULL, 'w' },
-        { "keydbprexix", required_argument, NULL, 'w' },
+        { "certdbprefix", required_argument, NULL, 'c' },
+        { "keydbprexix", required_argument, NULL, 'k' },
         { NULL }
     };
 
@@ -332,7 +332,7 @@ int main(int argc, char **argv)
      * mktime() back to UTC: */
     tzset();
     
-    while ((optc = getopt_long(argc, argv, "qp:a:d:w:", options, NULL)) != -1) {
+    while ((optc = getopt_long(argc, argv, "qp:a:d:w:c:k:", options, NULL)) != -1) {
         switch (optc) {
         case 'q':
             quiet = 1;
