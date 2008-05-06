@@ -34,6 +34,9 @@ watch_database_certs()
         
     # find path to mod_nss' database
     database=`/usr/bin/gawk '/^NSSCertificateDatabase/ { print $2 }' /etc/httpd/conf.d/nss.conf`
+    
+    # find the database prefix if any from the mod_nss config file
+    dbprefix=`/usr/bin/gawk '/^NSSDBPrefix/ { print $2 }' /etc/httpd/conf.d/nss.conf`
 
     set -o pipefail # pick up exit code of certutil not gawk
     nicknames=`certutil -L -d $database | /usr/bin/gawk '{ print $1 }'`
@@ -42,8 +45,8 @@ watch_database_certs()
     
     for n in $nicknames; do
         # Check whether a warning message is needed, then issue one if so.
-        /usr/bin/certwatch $CERTWATCH_OPTS -q -d "$database" "$n" && 
-          /usr/bin/certwatch $CERTWATCH_OPTS -d "$database" "$n" | /usr/sbin/sendmail -oem -oi -t 2>/dev/null
+        /usr/bin/certwatch $CERTWATCH_OPTS -q -d "$database" -c "$dbprefix" -k "$dbprefix" "$n" && 
+          /usr/bin/certwatch $CERTWATCH_OPTS -d "$database" -c "$dbprefix" -k "$dbprefix" "$n" | /usr/sbin/sendmail -oem -oi -t 2>/dev/null
     done
 }
 
