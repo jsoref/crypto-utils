@@ -952,13 +952,6 @@ sub genRequestOpenSSL
         Newt::Finished();
         exit 1;
     }
-    
-    if ($debug) {
-       my $passwordarg = $pwdfile ? "file:$pwdfile" : "pass:12345";
-       Newt::Suspend();
-       system("openssl pkcs8 -inform PEM -in $keyfile -passin $passwordarg");
-    Newt::Resume();
-    }
 }
 
 sub AddField
