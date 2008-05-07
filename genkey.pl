@@ -73,8 +73,7 @@ Usage: genkey [options] servername
     --genreq Just generate a CSR from an existing key
     --makeca Generate a private CA key instead
     --days   Days until expiry of self-signed certificate (default 30)
-    --nss    Use the mod_nss database for keys and certificates
-    --debug  Enable debug logs to files
+    --nss    Use the nss database for keys and certificates
 EOH
     exit 1;
 }
@@ -122,7 +121,6 @@ my $genreq_mode = '';
 my $ca_mode = '';
 my $cert_days = 30;
 my $nss ='';
-my $debug ='';
 my $modNssDbDir = '';
 my $nssNickname = '';
 my $nssDBPrefix = '';
@@ -130,7 +128,6 @@ GetOptions('test|t' => \$test_mode,
 	   'genreq' => \$genreq_mode,
        'days=i' => \$cert_days,
        'nss|n'  => \$nss,
-       'debug|d'=> \$debug,
 	   'makeca' => \$ca_mode) or usage();
 usage() unless @ARGV != 0;
 $overwrite_key = $test_mode && !$nss;
@@ -225,7 +222,6 @@ if ($genreq_mode) {
 		customKeySizeWindow,
 		getRandomDataWindow,
 		wantCAWindow,
-		whichCAWindow,
 		keyPasswordWindow,
 		genReqWindow,
         genReqWindow,
@@ -329,8 +325,10 @@ sub getModNSSDatabase {
     my $cmd ='/usr/bin/gawk \'/^NSSCertificateDatabase/ { print $2 }\'' . " $nssconf"; 
     my $dbfile = "dbdirectory";
     system("$cmd > $dbfile");
-    open(DIR, "<$dbfile");  
-    my $dbdir = <DIR>;
+    open(DIR, "<$dbfile");
+    my $dbdir = '';
+    chomp($dbdir = <DIR>);
+    
     unlink($dbfile);
     
     return $dbdir;
@@ -344,10 +342,9 @@ sub getNSSNickname {
     my $nicknamefile = "nssnickname";
     system("$cmd > $nicknamefile");
     open(NICK, "<$nicknamefile");  
-    my $nickname = <NICK>; 
+    my $nickname = ''; 
+    chomp($nickname = <NICK>); 
     unlink($nicknamefile);
-    my $prefix = $nss ? "modnss.test." : "modssl.test";
-    $nickname = $prefix . $nickname if $debug;
     return $nickname;
 }
 
@@ -359,7 +356,8 @@ sub getNSSDBPrefix {
     my $prefixfile = "dbprefix";
     system("$cmd > $prefixfile");
     open(PREFIX, "<$prefixfile");
-    my $prefix = <PREFIX>; 
+    my $prefix = '';
+    chomp($prefix = <PREFIX>); 
     unlink($prefixfile);
 
     return $prefix;
@@ -532,10 +530,10 @@ EOT
 sub welcomeWindow()
 {
     my $name = $servername;
-    my $where_key  = $nss
-        ? $modNssDbDir."key3.db" : "$ssltop/private/$name.key";
+    my $where_key = $nss
+        ? $modNssDbDir."/$nssDBPrefix"."key3.db" : "$ssltop/private/$name.key";
     my $where_cert = $nss
-        ? $modNssDbDir."cert8.db" : "$ssltop/certs/$name.cert";
+        ? $modNssDbDir."/$nssDBPrefix"."cert8.db" : "$ssltop/certs/$name.cert";
     my $what = $nss ? "directory" : "file";
     my $message = <<EOT;
 You are now generating a new keypair which will be used to encrypt all
@@ -571,7 +569,7 @@ EOT
 sub CAwelcomeWindow()
 {
     my $name = $servername;
-    my $where = $nss ? $modNssDbDir : "$cadir/private/$name"; 
+    my $where = $nss ? $modNssDbDir."/$nssDBPrefix"."key3.db" : "$cadir/private/$name"; 
     my $message = <<EOT;
 You are now generating a new keypair which will be used for your
 private CA
@@ -638,20 +636,86 @@ sub savePassword
 		$tmpPasswordFile = ''; # mark it as never created
 	    return "Back";
     }
-    print SESAME $passwd."\n\n";
+    print SESAME $passwd;
     close(SESAME);
     # This file will be deleted on program exit.
 
     return "Next";
 }
 
+sub moduleAccesPasswordWindow
+{	
+    my $message = <<EOT;
+At this stage you can provide the module acess passphrase.
+EOT
+    $panel = Newt::Panel(1, 3, "Module access");
+    $panel->Add(0, 0, Newt::Textbox(70, 5, 0, $message));
+
+    my $checkbox = Newt::Checkbox("Does the module require a password");
+    $panel->Add(0, 1, $checkbox);
+    $panel->Add(0, 2, NextBackCancelButton());
+
+    $ret = &RunForm($panel);
+
+    my $plain = 1;
+    $plain = 0 if $checkbox->Checked();
+
+    $panel->Hide();
+    undef $panel;
+
+    return $ret if ($ret eq "Back" or $ret eq "Cancel" or $plain == 1);
+ 
+    $panel = Newt::Panel(1, 3, "Enter the module passphrase");
+
+    $message = <<EOT;
+This is the passphrase to your module.
+EOT
+    $panel->Add(0, 0, Newt::Textbox(70, 5, 0, $message));
+    $subp = Newt::Panel(2,2);
+    $entp1 = AddField($subp,0,"Passphrase","",30,0,
+                      Newt::NEWT_FLAG_HIDDEN());
+
+    $panel->Add(0, 1, $subp, 0, 0, 1);
+    $panel->Add(0, 2, NextBackCancelButton());
+
+    while (1) {
+        # Clear the password entry box to avoid confusion on looping
+        $entp1->Set("");
+	    $panel->Focus($entp1);
+
+	    # Pass "Ignore" to make enter go to next widget.
+	    $ret = &RunForm($panel, "Ignore");
+
+	    if ($ret eq "Cancel" or $ret eq "Back") {
+	        $panel->Hide();
+	        undef $subp;
+	        undef $panel;
+	        return $ret;
+	    }
+	    $pass1 = $entp1->Get();
+
+	    last;
+    }
+
+    $panel->Hide();
+    undef $panel;
+
+    return $ret if ($ret eq "Back" or $ret eq "Cancel");
+
+    # Save it to a temporary file to supply to the nss utilities,
+    # the file will be erased upon exit
+    savePassword($pass1);
+
+    return "Next";
+	
+}
+
 # Prompts for key encryption password 
-# When using NSS skip prompting as the
-# key is protected in the database via
-# the module access password.
+# When using NSS it prompts for the
+# module acces password instead.
 sub keyPasswordWindow
 {
-	return "Next "if $nss;
+	return moduleAccesPasswordWindow() if $nss;
 	
     my $message = <<EOT;
 At this stage you can set the passphrase on your private key. If you
@@ -754,22 +818,20 @@ EOT
 }
 
 #
-# Bottleneck routine to call the nss utilies.
+# Bottleneck routine to call the nss utilities.
 # Calls are bracketed by newt suspend and resume
 # enabling user interaction from the nss utilities
 # and trace messages to the console.
 #
 sub nssUtilCmd {
     
-    my ($cmd, $args, $debug) = @_;
+    my ($cmd, $args) = @_;
 
     Newt::Suspend();
     print STDOUT "$cmd $args"."\n";
-    if ($debug) {
-    	system("gdb $cmd");
-    } else {
-    	system("$cmd $args");
-    }
+    system("$cmd $args");
+    # change to system("gdb $cmd");
+    # to break into the debugger
     print STDERR "$cmd returned $!"."\n" if $!;
     Newt::Resume();
 }
@@ -788,7 +850,6 @@ sub makeCertNSS
     my $months = $days / 30;      
     my $trustargs = "\"" . "TCu,TCu,TCuw". "\"";
     
-    my $cmd = "$bindir/certutil";
     my $args = "-S ";
     $args .= "-n $nickname ";
     $args .= "-s $subject "; 
@@ -801,17 +862,17 @@ sub makeCertNSS
     $args .= "-f $pwdfile " if $pwdfile;
     $args .= "-z $noisefile " if $noisefile;
     $args .= "-d $modNssDbDir "; 
-    $args .= "-p $nssDBPrefix" if $nssDBPrefix;
-    $args .= "-o $certfile";
+    $args .= "-p $nssDBPrefix " if $nssDBPrefix;
+    $args .= "-o $certfile ";
     
-    nssUtilCmd($cmd, $args, $debug);
+    nssUtilCmd("$bindir/certutil", $args);
 
-    unlink($noisefile) unless $debug;
+    unlink($noisefile);
     
     if (!-f $certfile) {
         Newt::newtWinMessage("Error", "Close", 
-            "Unable to create a certificate for this ".
-            "host:\n\nPress return to exit");
+			     "Was not able to create a certificate for this ".
+			     "host:\n\nPress return to exit");
         Newt::Finished();
         exit 1;
     }
@@ -827,7 +888,6 @@ sub genRequestNSS
     use integer;
     my $months = $days / 30;
     
-    my $cmd = "$bindir/certutil";
     my $args = "-R ";
     
     $args .= "-s $subject ";
@@ -841,9 +901,9 @@ sub genRequestNSS
     $args .= "-z $noisefile " if $noisefile;
     $args .= "-o $csrfile ";
     
-    nssUtilCmd($cmd, $args, $debug);
+    nssUtilCmd("$bindir/certutil", $args);
 
-    unlink($noisefile) unless $debug;
+    unlink($noisefile);
     
     if (!-f $csrfile) {
         Newt::newtWinMessage("Error", "Close", 
@@ -866,26 +926,25 @@ sub makeCertOpenSSL
     my $keysize = $bits;
 
     # build the arguments for a gen cert call, self-signed
-    my $cmd = "$ssltop/keyutil";
     my $args = "-c makecert ";
     $args   .= "-g $keysize ";
     $args   .= "-s $subject ";
     $args   .= "-v $months "; 
     $args   .= "-a ";              ## using ascii 
     $args   .= "-z $noisefile " if $noisefile;
-    $args   .= "-e $pwdfile " if $pwdfile; 
+    $args   .= "-e $pwdfile "   if $pwdfile; 
               # there is no password when the
               # user wants the key in the clar
     $args   .= "-o $certfile ";
     $args   .= "-k $keyfile";
 
-    nssUtilCmd($cmd, $args, $debug);    
+    nssUtilCmd("$ssltop/keyutil", $args);    
 
     if (!-f $certfile) {
         Newt::newtWinMessage("Error", "Close", 
                  "Was not able to create a certificate for this ".
                  "host:\n\nPress return to exit");
-        unlink($noisefile) unless $debug;
+        unlink($noisefile);
         Newt::Finished();
         exit 1;
     }
@@ -895,11 +954,11 @@ sub makeCertOpenSSL
                              "Could not set permissions of private key file.\n".
                              "$keyfile");
            Newt::Finished();
-           unlink($noisefile) unless $debug;
+           unlink($noisefile);
            exit 1;
         }
     }
-    unlink($noisefile) unless $debug;
+    unlink($noisefile);
 }
 
 # Create a certificate-signing request file that can be submitted to a 
@@ -914,7 +973,6 @@ sub genRequestOpenSSL
     my $months = $days ? $days / 30 : 24;
             
     # build the arguments for a gen request call
-    my $cmd="$ssltop/keyutil";
     my $args = "-c genreq ";
     $args   .= "-g $bits "; 
     $args   .= "-s $subject ";
@@ -923,12 +981,12 @@ sub genRequestOpenSSL
     $args   .= "-k $keyfile "; 
     $args   .= "-e $pwdfile " if $pwdfile;
               # there is no password when the
-              # user wants the key in the clar
+              # user wants the key in the clear
     $args   .= "-z $noisefile "  if $noisefile;
  
-    nssUtilCmd($cmd, $args, $debug);
+    nssUtilCmd("$ssltop/keyutil", $args);
          
-    unlink($noisefile) unless $debug;
+    unlink($noisefile);
     Newt::Resume();
     
     if (!-f $csrfile) {
@@ -1137,7 +1195,7 @@ sub genReqWindow
     return $ret unless ($ret eq "Next");
 
     if ($nss) {
-        genRequestNSS($csrfile, $subject, 730, $randfile, "");
+        genRequestNSS($csrfile, $subject, 730, $randfile, $tmpPasswordFile);
     } else {
         genRequestOpenSSL($keyfile, $csrfile,
                           $subject, 730, $randfile, $tmpPasswordFile);
@@ -1150,7 +1208,7 @@ sub genReqWindow
             if ($nss) {
                 makeCertNSS($certfile,
                             $subject, $cert_days, $nickname,
-                            $randfile, ""); 
+                            $randfile, $tmpPasswordFile); 
             } else {
                 makeCertOpenSSL($keyfile,$certfile,
                                 $subject, $cert_days,
@@ -1262,7 +1320,7 @@ sub genCertWindow
     if ($nss) {
         makeCertNSS($certfile, # output
             $subject,$cert_days,$nickname,
-            $randfile,"");
+            $randfile,$tmpPasswordFile);
     } else {
         makeCertOpenSSL($keyfile,$certfile, # output
             $subject,$cert_days,
@@ -1302,7 +1360,7 @@ sub genCACertWindow
 sub getRandomDataWindow() 
 {
     my $randbits = $bits * 2;
-
+    
 # Get some random data from truerand library
 #    
 	FinishRoot();
