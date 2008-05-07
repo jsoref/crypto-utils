@@ -130,6 +130,7 @@ GetOptions('test|t' => \$test_mode,
        'nss|n'  => \$nss,
 	   'makeca' => \$ca_mode) or usage();
 usage() unless @ARGV != 0;
+$skip_random = $test_mode;
 $overwrite_key = $test_mode && !$nss;
 $servername = $ARGV[0];
 $randfile = $ssltop."/.rand.".$$;
@@ -1207,7 +1208,7 @@ sub genReqWindow
 	    if (!-f $certfile) {
             if ($nss) {
                 makeCertNSS($certfile,
-                            $subject, $cert_days, $nickname,
+                            $subject, $cert_days, $nssNickname,
                             $randfile, $tmpPasswordFile); 
             } else {
                 makeCertOpenSSL($keyfile,$certfile,
@@ -1319,7 +1320,7 @@ sub genCertWindow
 
     if ($nss) {
         makeCertNSS($certfile, # output
-            $subject,$cert_days,$nickname,
+            $subject,$cert_days,$nssNickname,
             $randfile,$tmpPasswordFile);
     } else {
         makeCertOpenSSL($keyfile,$certfile, # output
@@ -1347,8 +1348,8 @@ sub genCACertWindow
     return $ret unless ($ret eq "Next");
 
     if ($nss) {
-        makeCertNSS($certfile,$subject,730,$nickname,
-                    $randfile,"");
+        makeCertNSS($certfile,$subject,730,$nssNickname,
+                    $randfile,$tmpPasswordFile);
     } else {
         makeCertOpenSSL($keyfile,$certfile,$subject,730,
                         $randfile,$tmpPasswordFile);
@@ -1360,9 +1361,10 @@ sub genCACertWindow
 sub getRandomDataWindow() 
 {
     my $randbits = $bits * 2;
-    
+
 # Get some random data from truerand library
-#    
+#
+    if (!$skip_random) {
 	FinishRoot();
 	InitRoot(0);
 	makerand($randbits,$randfile);
@@ -1370,8 +1372,16 @@ sub getRandomDataWindow()
 
 # Get some random data from keystrokes
 #
-    Newt::Suspend();
-    system("$bindir/keyrand $randbits $randfile");
-    Newt::Resume();
+      Newt::Suspend();
+
+      system("$bindir/keyrand $randbits $randfile");
+
+      Newt::Resume();
+    } else {
+# No extra random seed is being provided to nss. Rely
+# on nss faster autoseeding process. The nss utilities
+# will prompt the user for some keystrokes.
+    $randfile = '';
+    }
     return "Next";
 }
