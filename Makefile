@@ -46,28 +46,21 @@ test-genkey: genkey
 	mkdir -p certs private
 	./genkey --test `hostname`
 
-test-genkey-modnss: genkey
-	mkdir -p certs private
-	./genkey --test --nss test.`hostname`
-
 #########################################################################
-# The following test targets run genkey with debug tracing on, which 
-# creates temporary files, and the nss utilities with gdb. Use the
-# cleanup-tests to help clean up after yourself. The -modnss targets may
-# need to be run as super user in order to access the database.
+# Individual testing targets.
 #########################################################################
 
 test-genreq-modssl: genkey
-	perl ./genkey --genreq -d test.`hostname`
+	perl ./genkey --genreq test.`hostname`
 			
 test-makecert-modssl: genkey
-	perl ./genkey --makeca -d test.`hostname`
+	perl ./genkey --makeca test.`hostname`
 
 test-genreq-modnss: genkey
-	perl ./genkey --genreq -d -n test.`hostname`
+	perl ./genkey --genreq -nss test.`hostname`
 
 test-makecert-modnss: genkey
-	perl ./genkey --makeca -d -n test.`hostname`
+	perl ./genkey --makeca -nss test.`hostname`
 
 prepare-tests:
 	mkdir -p certs private
