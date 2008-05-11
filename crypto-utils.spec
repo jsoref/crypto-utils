@@ -22,14 +22,14 @@ Source13: secerror.c
 Source14: keyutil.h
 Source15: secutil.h
 Source16: NSPRerrs.h
-Source17: SECErrs.h
+Source17: SECerrs.h
 Source18: copying
 Group: Applications/System
 License: MIT and GPLv2+
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: nss-devel, pkgconfig, newt-devel, xmlto
 BuildRequires: perl-devel, perl(Newt), perl(ExtUtils::MakeMaker)
-Requires: perl(Newt), nss >= 3.11.99.5-2fc-9
+Requires: perl(Newt), nss >= 3.11.99
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Obsoletes: crypto-rand
 
