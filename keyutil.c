@@ -172,8 +172,9 @@ static void
 Usage(char *progName)
 {
     fprintf(stderr, "Usage: %s [options] arguments\n", progName);
+    fprintf(stderr, "-h print this help message");
     fprintf(stderr, "-c command one of [genreq|makecert]");
-    fprintf(stderr, "-s subject subject distingusehed name");
+    fprintf(stderr, "-s subject subject distinguished name");
     fprintf(stderr, "-g keysize in bits");
     fprintf(stderr, "-v validity in months");
     fprintf(stderr, "-z noise file");
@@ -188,6 +189,9 @@ Usage(char *progName)
     exit(1);
 }
 
+/*
+ * Modelled after the one in certutil
+ */
 static CERTCertificateRequest *
 GetCertRequest(PRFileDesc *inFile, PRBool ascii)
 {
@@ -201,17 +205,17 @@ GetCertRequest(PRFileDesc *inFile, PRBool ascii)
     do {
         arena = PORT_NewArena(DER_DEFAULT_CHUNKSIZE);
         if (arena == NULL) {
-        GEN_BREAK (SECFailure);
+            GEN_BREAK(SECFailure);
         }
     
         rv = SECU_ReadDERFromFile(&reqDER, inFile, ascii);
         if (rv) {
-        break;
+        	GEN_BREAK(rv);
         }
         certReq = (CERTCertificateRequest*) PORT_ArenaZAlloc
           (arena, sizeof(CERTCertificateRequest));
         if (!certReq) { 
-        GEN_BREAK(SECFailure);
+            GEN_BREAK(SECFailure);
         }
         certReq->arena = arena;
 
@@ -220,17 +224,17 @@ GetCertRequest(PRFileDesc *inFile, PRBool ascii)
          */
         PORT_Memset(&signedData, 0, sizeof(signedData));
         rv = SEC_ASN1DecodeItem(arena, &signedData, 
-        SEC_ASN1_GET(CERT_SignedDataTemplate), &reqDER);
+            SEC_ASN1_GET(CERT_SignedDataTemplate), &reqDER);
         if (rv) {
-        break;
+            GEN_BREAK(rv);
         }
         rv = SEC_ASN1DecodeItem(arena, certReq, 
                 SEC_ASN1_GET(CERT_CertificateRequestTemplate), &signedData.data);
         if (rv) {
-        break;
+            GEN_BREAK(rv);
         }
         rv = CERT_VerifySignedDataWithPublicKeyInfo(&signedData, 
-        &certReq->subjectPublicKeyInfo, NULL /* wincx */);
+                &certReq->subjectPublicKeyInfo, NULL /* wincx */);
     } while (0);
 
     if (reqDER.data) {
@@ -240,7 +244,7 @@ GetCertRequest(PRFileDesc *inFile, PRBool ascii)
     if (rv) {
         SECU_PrintError(progName, "bad certificate request\n");
         if (arena) {
-        PORT_FreeArena(arena, PR_FALSE);
+            PORT_FreeArena(arena, PR_FALSE);
         }
         certReq = NULL;
     }
@@ -268,21 +272,21 @@ CertReq(SECKEYPrivateKey *privk, SECKEYPublicKey *pubk, KeyType keyType,
     /* Create info about public key */
     spki = SECKEY_CreateSubjectPublicKeyInfo(pubk);
     if (!spki) {
-    SECU_PrintError(progName, "unable to create subject public key");
-    return SECFailure;
+        SECU_PrintError(progName, "unable to create subject public key");
+        return SECFailure;
     }
     
     /* Generate certificate request */
     cr = CERT_CreateCertificateRequest(subject, spki, NULL);
     if (!cr) {
-    SECU_PrintError(progName, "unable to make certificate request");
-    return SECFailure;
+        SECU_PrintError(progName, "unable to make certificate request");
+        return SECFailure;
     }
 
     arena = PORT_NewArena(DER_DEFAULT_CHUNKSIZE);
     if ( !arena ) {
-    SECU_PrintError(progName, "out of memory");
-    return SECFailure;
+        SECU_PrintError(progName, "out of memory");
+        return SECFailure;
     }
     
     extHandle = CERT_StartCertificateRequestAttributes(cr);
@@ -302,72 +306,72 @@ CertReq(SECKEYPrivateKey *privk, SECKEYPublicKey *pubk, KeyType keyType,
     encoding = SEC_ASN1EncodeItem(arena, NULL, cr,
                                   SEC_ASN1_GET(CERT_CertificateRequestTemplate));
     if (encoding == NULL) {
-    SECU_PrintError(progName, "der encoding of request failed");
-    return SECFailure;
+        SECU_PrintError(progName, "der encoding of request failed");
+        return SECFailure;
     }
 
     /* Sign the request */
     signAlgTag = SEC_GetSignatureAlgorithmOidTag(keyType, hashAlgTag);
     if (signAlgTag == SEC_OID_UNKNOWN) {
-    SECU_PrintError(progName, "unknown Key or Hash type");
-    return SECFailure;
+        SECU_PrintError(progName, "unknown Key or Hash type");
+        return SECFailure;
     }
     rv = SEC_DerSignData(arena, &result, encoding->data, encoding->len, 
              privk, signAlgTag);
     if (rv) {
-    SECU_PrintError(progName, "signing of data failed");
-    return SECFailure;
+        SECU_PrintError(progName, "signing of data failed");
+        return SECFailure;
     }
 
     /* Encode request in specified format */
     if (ascii) {
-    char *obuf;
-    char *name, *email, *org, *state, *country;
-    SECItem *it;
-    int total;
+        char *obuf;
+        char *name, *email, *org, *state, *country;
+        SECItem *it;
+        int total;
 
-    it = &result;
+        it = &result;
 
-    obuf = BTOA_ConvertItemToAscii(it);
-    total = PL_strlen(obuf);
+        obuf = BTOA_ConvertItemToAscii(it);
+        total = PL_strlen(obuf);
 
-    name = CERT_GetCommonName(subject);
-    if (!name) {
-        name = strdup("(not specified)");
-    }
+        name = CERT_GetCommonName(subject);
+        if (!name) {
+            name = strdup("(not specified)");
+        }
 
-    if (!phone)
-        phone = strdup("(not specified)");
+        if (!phone)
+            phone = strdup("(not specified)");
 
-    email = CERT_GetCertEmailAddress(subject);
-    if (!email)
-        email = strdup("(not specified)");
+        email = CERT_GetCertEmailAddress(subject);
+        if (!email)
+            email = strdup("(not specified)");
 
-    org = CERT_GetOrgName(subject);
-    if (!org)
-        org = strdup("(not specified)");
+        org = CERT_GetOrgName(subject);
+        if (!org)
+            org = strdup("(not specified)");
 
-    state = CERT_GetStateName(subject);
-    if (!state)
-        state = strdup("(not specified)");
+        state = CERT_GetStateName(subject);
+        if (!state)
+            state = strdup("(not specified)");
 
-    country = CERT_GetCountryName(subject);
-    if (!country)
-        country = strdup("(not specified)");
-
-    PR_fprintf(outFile, "%s\n", NS_CERTREQ_HEADER);
-    numBytes = PR_Write(outFile, obuf, total);
-    if (numBytes != total) {
-        SECU_PrintSystemError(progName, "write error");
-        return SECFailure;
-    }
-    PR_fprintf(outFile, "\n%s\n", NS_CERTREQ_TRAILER);
-    } else {
-    numBytes = PR_Write(outFile, result.data, result.len);
-    if (numBytes != (int)result.len) {
-        SECU_PrintSystemError(progName, "write error");
-        return SECFailure;
-    }
+	    country = CERT_GetCountryName(subject);
+	    if (!country)
+	        country = strdup("(not specified)");
+	
+	    PR_fprintf(outFile, "%s\n", NS_CERTREQ_HEADER);
+	    numBytes = PR_Write(outFile, obuf, total);
+	    if (numBytes != total) {
+	        SECU_PrintSystemError(progName, "write error");
+	        return SECFailure;
+	    }
+	    PR_fprintf(outFile, "\n%s\n", NS_CERTREQ_TRAILER);
+	} else {
+	    numBytes = PR_Write(outFile, result.data, result.len);
+	    if (numBytes != (int)result.len) {
+	        SECU_PrintSystemError(progName, "write error");
+	        return SECFailure;
+	    }
     }
     return SECSuccess;
 }
@@ -392,17 +396,17 @@ MakeV1Cert(CERTCertDBHandle *   handle,
         if (!issuerCert) {
             SECU_PrintError(progName, "could not find certificate named \"%s\"",
                 issuerNickName);
-        return NULL;
+            return NULL;
         }
     }
 
     now = PR_Now();
     PR_ExplodeTime (now, PR_GMTParameters, &printableTime);
-    if ( warpmonths ) {
-    printableTime.tm_month += warpmonths;
-    now = PR_ImplodeTime (&printableTime);
-    PR_ExplodeTime (now, PR_GMTParameters, &printableTime);
-    }
+	if ( warpmonths ) {
+	    printableTime.tm_month += warpmonths;
+	    now = PR_ImplodeTime (&printableTime);
+	    PR_ExplodeTime (now, PR_GMTParameters, &printableTime);
+	}
     printableTime.tm_month += validityMonths;
     after = PR_ImplodeTime (&printableTime);
 
@@ -417,7 +421,7 @@ MakeV1Cert(CERTCertDBHandle *   handle,
         CERT_DestroyValidity(validity);
     }
     if ( issuerCert ) {
-    CERT_DestroyCertificate (issuerCert);
+        CERT_DestroyCertificate (issuerCert);
     }
     
     return(cert);
@@ -456,14 +460,14 @@ SignCert(CERTCertDBHandle *handle, CERTCertificate *cert, PRBool selfsign,
 
     algID = SEC_GetSignatureAlgorithmOidTag(privKey->keyType, hashAlgTag);
     if (algID == SEC_OID_UNKNOWN) {
-    fprintf(stderr, "Unknown key or hash type for issuer.");
-    goto done;
+        fprintf(stderr, "Unknown key or hash type for issuer.");
+        goto done;
     }
 
     rv = SECOID_SetAlgorithmID(arena, &cert->signature, algID, 0);
     if (rv != SECSuccess) {
-    fprintf(stderr, "Could not set signature algorithm id.");
-    goto done;
+        fprintf(stderr, "Could not set signature algorithm id.");
+        goto done;
     }
 
     /* we only deal with cert v3 here */
@@ -475,23 +479,23 @@ SignCert(CERTCertDBHandle *handle, CERTCertificate *cert, PRBool selfsign,
     dummy = SEC_ASN1EncodeItem (arena, &der, cert,
                 SEC_ASN1_GET(CERT_CertificateTemplate));
     if (!dummy) {
-    fprintf (stderr, "Could not encode certificate.\n");
-    goto done;
+        fprintf (stderr, "Could not encode certificate.\n");
+        goto done;
     }
 
     result = (SECItem *) PORT_ArenaZAlloc (arena, sizeof (SECItem));
     if (result == NULL) {
-    fprintf (stderr, "Could not allocate item for certificate data.\n");
-    goto done;
+        fprintf (stderr, "Could not allocate item for certificate data.\n");
+        goto done;
     }
 
     rv = SEC_DerSignData(arena, result, der.data, der.len, privKey, algID);
     if (rv != SECSuccess) {
-    fprintf (stderr, "Could not sign encoded certificate data.\n");
-    /* result allocated out of the arena, it will be freed
-     * when the arena is freed */
-    result = NULL;
-    goto done;
+	    fprintf (stderr, "Could not sign encoded certificate data.\n");
+	    /* result allocated out of the arena, it will be freed
+	     * when the arena is freed */
+	    result = NULL;
+	    goto done;
     }
     cert->derCert = *result;
 done:
@@ -550,12 +554,12 @@ CreateCert(
         
         extHandle = CERT_StartCertExtensions (subjectCert);
         if (extHandle == NULL) {
-        GEN_BREAK (SECFailure)
+            GEN_BREAK (SECFailure)
         }
         
         rv = AddExtensions(extHandle, emailAddrs, dnsNames, extnList);
         if (rv != SECSuccess) {
-        GEN_BREAK (SECFailure)
+            GEN_BREAK (SECFailure)
         }
         
         if (certReq->attributes != NULL &&
@@ -614,11 +618,13 @@ typedef struct _PrivateKeyStr PrivateKey;
 /*  Keyutil commands  */
 typedef enum _CommandType {
     cmd_CertReq,
-    cmd_CreateNewCert,
-    cmd_ImportKey
+    cmd_CreateNewCert
 } CommandType;
 
-
+/*
+ * Get the key encryption password from a password file.
+ * Stores the password from pwFile in pwitem.
+ */
 PRBool GetKeyPassword(const char *pwFile, SECItem *pwitem)
 {
     int i;
@@ -721,13 +727,12 @@ UpdateRNG(void)
 
 #undef FPS
 
-#if defined(XP_UNIX) && !defined(VMS)
     /* set back termio the way it was */
     tio.c_lflag = orig_lflag;
     tio.c_cc[VMIN] = orig_cc_min;
     tio.c_cc[VTIME] = orig_cc_time;
     tcsetattr(fd, TCSAFLUSH, &tio);
-#endif
+
     return rv;
 }
 
@@ -811,203 +816,19 @@ GenerateRSAPrivateKey(KeyType keytype,
     return privKey;
 }
 
-static SECStatus
-ValidateCert(CERTCertDBHandle *handle, CERTCertificate  *cert, char *name, char *date,
-        char *certUsage, PRBool checkSig, PRBool logit, secuPWData *accessPassword)
-{
-    SECStatus rv;
-    int64 timeBoundary;
-    SECCertificateUsage usage;
-    CERTVerifyLog reallog;
-    CERTVerifyLog *log = NULL;
-
-    if (!certUsage) {
-        PORT_SetError (SEC_ERROR_INVALID_ARGS);
-        return (SECFailure);
-    }
-    
-    switch (*certUsage) {
-    case 'O':
-        usage = certificateUsageStatusResponder;
-        break;
-    case 'C':
-        usage = certificateUsageSSLClient;
-        break;
-    case 'V':
-        usage = certificateUsageSSLServer;
-        break;
-    case 'S':
-        usage = certificateUsageEmailSigner;
-        break;
-    case 'R':
-        usage = certificateUsageEmailRecipient;
-        break;
-    case 'J':
-        usage = certificateUsageObjectSigner;
-        break;
-    default:
-        PORT_SetError (SEC_ERROR_INVALID_ARGS);
-        return (SECFailure);
-    }
-    do {
-        if (date != NULL) {
-            rv = DER_AsciiToTime(&timeBoundary, date);
-            if (rv) {
-                SECU_PrintError(progName, "invalid input date");
-                GEN_BREAK (SECFailure)
-            }
-        } else {
-            timeBoundary = PR_Now();
-        }
-
-        if ( logit ) {
-            log = &reallog;
-            
-            log->count = 0;
-            log->head = NULL;
-            log->tail = NULL;
-            log->arena = PORT_NewArena(DER_DEFAULT_CHUNKSIZE);
-            if ( log->arena == NULL ) {
-                SECU_PrintError(progName, "out of memory");
-                GEN_BREAK (SECFailure)
-            }
-        }
-        fprintf(stdout, "%s: CERT_VerifyCertificate called\n", progName);
-        rv = CERT_VerifyCertificate(handle, cert, checkSig, usage,
-                 timeBoundary, accessPassword, log, &usage);
-        fprintf(stdout, "%s: CERT_VerifyCertificate returned %d\n", progName, rv);
-        
-        if ( log ) {
-            if ( log->head == NULL ) {
-                fprintf(stdout, "%s: certificate is valid\n", progName);
-                GEN_BREAK (SECSuccess)
-            } else {
-            char *name;
-            CERTVerifyLogNode *node;
-            
-            node = log->head;
-            while ( node ) {
-                if (node->cert->nickname != NULL) {
-                    name = node->cert->nickname;
-                } else {
-                    name = node->cert->subjectName;
-                }
-                fprintf(stderr, "%s : %ld\n", name, node->error);
-                CERT_DestroyCertificate(node->cert);
-                node = node->next;
-            }
-            }
-        } else {
-            if (rv != SECSuccess) {
-                PRErrorCode perr = PORT_GetError();
-                fprintf(stdout, "%s: certificate is invalid: %s\n",
-                    progName, SECU_Strerror(perr));
-                GEN_BREAK (SECFailure)
-            }
-            fprintf(stdout, "%s: certificate is valid\n", progName);
-            GEN_BREAK (SECSuccess)
-        }
-        
-    } while (0);
-
-    if (cert) {
-        CERT_DestroyCertificate(cert);
-    }
-
-    return (rv);
-}
-
-/* Import a private key to the internal slot temorarily.
- * This function if for testing only.
+/* 
+ * Decrypt the private key 
  */
-static SECStatus
-ImportKey(CERTCertDBHandle *certHandle,
-          const char *passwordfile,
-          const char *keyfile, PRBool ascii)
-{
-    SECStatus rv = SECSuccess;
-    PRFileDesc *inFile = NULL;
-    SECItem nickname = { siBuffer, (unsigned char *) "nick", 4 };
-    SECItem der = { 0, NULL, 0 };
-    unsigned char myData[20];
-    SECItem dummy;
-    PK11SlotInfo *slot = NULL;
-
-    SECKEYEncryptedPrivateKeyInfo epki;
-    PRArenaPool *arena = NULL;
-    SECItem pwitem = { 0, NULL, 0 };
-    secuPWData accessPassword = { 0, NULL };
-    
-    do {
-        if (passwordfile) {
-            if (!GetKeyPassword(passwordfile, &pwitem))
-                return 255;
-        } else {
-            PR_fprintf(PR_STDERR, 
-                "%s export/import of clear keys not impemented yet\n",
-                progName);
-        }
-        
-        inFile = PR_Open(keyfile, PR_RDONLY, 0);
-        if (!inFile) GEN_BREAK(SEC_ERROR_IO);
-        
-        rv = SECU_ReadDERFromFile(&der, inFile, ascii);
-        if (rv != SECSuccess) break;
-
-        arena = PORT_NewArena(DER_DEFAULT_CHUNKSIZE);
-        if (!arena) GEN_BREAK(SEC_ERROR_NO_MEMORY);
-        epki.arena = arena;
-
-        rv = SEC_QuickDERDecodeItem(arena, &epki,
-                SECKEY_EncryptedPrivateKeyInfoTemplate, &der);
-        if (rv) {
-            SECU_PrintError(progName, 
-            "unable to SEC_QuickDERDecodeItem the private key");
-            break; 
-        }
-        
-        /* whatever garbage bytes are the stack are okay */
-        dummy.data = myData;
-        dummy.len = sizeof(myData);
-        
-        slot = PK11_GetInternalSlot();
-        rv = PK11_ImportEncryptedPrivateKeyInfo(slot, 
-                &epki, &pwitem, &nickname, &dummy, 
-                PR_FALSE, PR_TRUE, /* not permanent, private */
-                rsaKey, 0,         /* signing */
-                &accessPassword
-               );
-        if (rv) {
-            SECU_PrintError(progName, 
-            "Unable to Import Encrypted PrivateKey into database");
-        }
-        
-    } while (0);
-
-    printf("Imported encrypted private key into the database\n");
-
-    if (arena)
-        PORT_FreeArena(arena, PR_TRUE);
-    if (inFile)
-        PR_Close(inFile);
-    
-    return rv;
-}
-
-/* Decrypt the private key */
 SECStatus DecryptKey(
     SECKEYEncryptedPrivateKeyInfo *epki,    
     SECOidTag algTag,
     SECItem *pwitem, 
     secuPWData *accessPassword,
-    SECItem **derPKI
-    )
+    SECItem *derPKI)
 {
-    PLArenaPool *arena = NULL;
     SECItem  *cryptoParam = NULL;
     PK11SymKey *symKey = NULL;
     PK11Context *ctx = NULL;
-    SECItem *dest = NULL;
     SECStatus rv = SECSuccess;
 
     if (!pwitem) {
@@ -1019,14 +840,8 @@ SECStatus DecryptKey(
         CK_MECHANISM_TYPE cryptoMechType;
         CK_MECHANISM cryptoMech;
         CK_ATTRIBUTE_TYPE operation = CKA_DECRYPT;
-        
-        /* don't know if this will work */
-        symKey = PK11_PBEKeyGen(PK11_GetInternalSlot(), 
-                &algid, pwitem, PR_FALSE, accessPassword);
-        if (symKey == NULL) {
-            ERROR_BREAK;
-        }
-        
+        PK11SlotInfo *slot = NULL;
+                
         cryptoMechType = PK11_GetPBECryptoMechanism(&algid, &cryptoParam, pwitem);
         if (cryptoMechType == CKM_INVALID_MECHANISM)  {
             ERROR_BREAK;
@@ -1036,30 +851,29 @@ SECStatus DecryptKey(
         cryptoMech.pParameter = cryptoParam ? cryptoParam->data : NULL;
         cryptoMech.ulParameterLen = cryptoParam ? cryptoParam->len : 0;
 
+        slot = PK11_GetBestSlot(cryptoMechType, NULL);
+        if (!slot) {
+        	ERROR_BREAK;
+        }
+        
+        symKey = PK11_PBEKeyGen(slot, &algid, pwitem, PR_FALSE, accessPassword);
+        if (symKey == NULL) {
+            ERROR_BREAK;
+        }
+
         ctx = PK11_CreateContextBySymKey(cryptoMechType, operation, symKey, cryptoParam);
         if (ctx == NULL) {
              ERROR_BREAK;       
         }
-
-        arena = PORT_NewArena(2048);
-        if (!arena) {
-            GEN_BREAK(PR_OUT_OF_MEMORY_ERROR);
-        }
-
-        dest = malloc(sizeof(SECItem));
-        assert(dest);
-        dest->data = PORT_ArenaAlloc(arena, epki->encryptedData.len);
-        dest->len = 0;
-        dest->type = siBuffer; /* siClearDataBuffer? */
         
         rv = PK11_CipherOp(ctx, 
-                dest->data,                    /* out     */
-                (int *)(&dest->len),           /* out len */
+        		derPKI->data,                  /* out     */
+                (int *)(&derPKI->len),         /* out len */
                 (int)epki->encryptedData.len,  /* max out */
                 epki->encryptedData.data,      /* in      */
                 (int)epki->encryptedData.len); /* in len  */
         
-        assert(dest->len == epki->encryptedData.len);
+        assert(derPKI->len == epki->encryptedData.len);
         assert(rv == SECSuccess);
         rv = PK11_Finalize(ctx);
         assert(rv == SECSuccess);
@@ -1077,17 +891,6 @@ SECStatus DecryptKey(
     if (ctx) {
         PK11_DestroyContext(ctx, PR_TRUE);
     }
-
-    if (rv != SECSuccess) {
-        if (dest) {
-            if (arena) {
-                PORT_FreeArena(arena, PR_TRUE);
-            }
-        }
-        *derPKI = NULL;
-    } else {
-        *derPKI = dest;     
-    }
     
     return rv;
 
@@ -1104,18 +907,18 @@ KeyOut(const char *keyoutfile,
        PRBool ascii)
 {
     
-#define PRAND_PASS_LEN 6
+#define RAND_PASS_LEN 6
     
     PRFileDesc *keyOutFile = NULL;
     PRUint32 total = 0;
     PRUint32 numBytes = 0;
     SECItem *derEPKI = NULL;
-    SECItem *derPKI = NULL;
-    char *b64 = NULL;
+    SECItem derPKI = { 0, NULL, 0 };
     SECItem pwitem = { 0, NULL, 0 };
-    PRArenaPool *arena = NULL;
+    PRArenaPool *arenaForEPKI = NULL;
+    PLArenaPool *arenaForPKI = NULL;
     SECKEYEncryptedPrivateKeyInfo *epki = NULL;
-    unsigned char randomPassword[PRAND_PASS_LEN];
+    unsigned char randomPassword[RAND_PASS_LEN];
     
     int rv = SECSuccess;
 
@@ -1131,10 +934,10 @@ KeyOut(const char *keyoutfile,
              * password to get NSS to export an encrypted 
              * key which we will decrypt. 
              */
-            rv = PK11_GenerateRandom(randomPassword, PRAND_PASS_LEN);
+            rv = PK11_GenerateRandom(randomPassword, RAND_PASS_LEN);
             if (rv != SECSuccess) GEN_BREAK(rv);    
             pwitem.data = randomPassword;
-            pwitem.len = PRAND_PASS_LEN;
+            pwitem.len = RAND_PASS_LEN;
             pwitem.type = siBuffer;
         }
         
@@ -1155,12 +958,12 @@ KeyOut(const char *keyoutfile,
             GEN_BREAK(rv);
         }
         
-        arena = PORT_NewArena(DER_DEFAULT_CHUNKSIZE);
-        assert(arena);
+        arenaForEPKI = PORT_NewArena(DER_DEFAULT_CHUNKSIZE);
+        assert(arenaForEPKI);
         
         if (key_pwd_file) {
             /* NULL dest to let it allocate memory for us */
-            derEPKI = SEC_ASN1EncodeItem(arena, NULL, epki,
+            derEPKI = SEC_ASN1EncodeItem(arenaForEPKI, NULL, epki,
                         SECKEY_EncryptedPrivateKeyInfoTemplate);
             if (rv != SECSuccess) {
                 PR_fprintf(PR_STDERR, "%s ASN1 Encode failed (%dl)\n",
@@ -1170,6 +973,16 @@ KeyOut(const char *keyoutfile,
         
         } else {
             /* Make a decrypted key the one to write out. */
+        	
+            arenaForPKI = PORT_NewArena(2048);
+            if (!arenaForPKI) {
+                GEN_BREAK(PR_OUT_OF_MEMORY_ERROR);
+            }
+
+            derPKI.data = PORT_ArenaAlloc(arenaForPKI, epki->encryptedData.len);
+            derPKI.len = epki->encryptedData.len;
+            derPKI.type = siBuffer;
+
             rv = DecryptKey(epki, algTag, &pwitem, accessPassword, &derPKI);
             if (rv) {
                 GEN_BREAK(rv);
@@ -1178,31 +991,44 @@ KeyOut(const char *keyoutfile,
  
         if (ascii) {
             /* we could be exporting a clear or encrypted key */
-            SECItem *src  = key_pwd_file ? derEPKI : derPKI;
+            SECItem *src  = key_pwd_file ? derEPKI : &derPKI;
             char *header  = key_pwd_file ? ENCRYPTED_KEY_HEADER : KEY_HEADER;
             char *trailer = key_pwd_file ? ENCRYPTED_KEY_TRAILER : KEY_TRAILER;
-                        
-            b64 = BTOA_ConvertItemToAscii(src);
-            assert(b64);
-            total = PL_strlen(b64);
-        
-            PR_fprintf(keyOutFile, "%s\n", header);
+            char *b64 = NULL;
+            do {
+                
+                b64 = BTOA_ConvertItemToAscii(src);
+                if (b64)
+                	break;
+                
+                total = PL_strlen(b64);
             
-            numBytes = PR_Write(keyOutFile, b64, total);
-            
-            if (numBytes != total) {
-                printf("Wrote  %d bytes, instead of %d\n", numBytes, total);
-            }
+                PR_fprintf(keyOutFile, "%s\n", header);
+                
+                numBytes = PR_Write(keyOutFile, b64, total);
+                
+                if (numBytes != total) {
+                    printf("Wrote  %d bytes, instead of %d\n", numBytes, total);
+                    break;
+                }
 
+                PR_fprintf(keyOutFile, "\n%s\n", trailer);
+            	
+            } while (0);
             
-            PR_fprintf(keyOutFile, "\n%s\n", trailer);
+            if (b64) {
+            	PORT_Free(b64);
+            }
+            
         } else {
             if (key_pwd_file) {
+            	/* Write out the encrypted key */
                 numBytes = PR_Write(keyOutFile, derEPKI, derEPKI->len);
             } else {
-                numBytes = PR_Write(keyOutFile, derPKI, derPKI->len);
+            	/* Write out the unencrypted key */
+                numBytes = PR_Write(keyOutFile, &derPKI, derPKI.len);
                 if (numBytes != derEPKI->len) {
-                    printf("Wrote  %d bytes, instead of %d\n", numBytes, derPKI->len);
+                    printf("Wrote  %d bytes, instead of %d\n", numBytes, derPKI.len);
                 }
             }
         }
@@ -1215,18 +1041,23 @@ KeyOut(const char *keyoutfile,
     if (keyOutFile) {
         PR_Close(keyOutFile);
     }
- 
-    if (arena) {
-        PORT_FreeArena(arena, PR_FALSE);
+    
+    if (derEPKI != NULL)
+        PORT_Free(derEPKI);
+
+    if (arenaForEPKI) {
+        PORT_FreeArena(arenaForEPKI, PR_FALSE);
+    }
+    
+    if (arenaForPKI) {
+        PORT_FreeArena(arenaForPKI, PR_FALSE);
     }
     
     if (!key_pwd_file) {
-        /* paranoia, this is stack-based object but we clear it anyway */
-        int i;
-        for (i = 0; i< PRAND_PASS_LEN; i++) {
-            randomPassword[i]='\0';
-        }
+        /* paranoia, though stack-based object we clear it anyway */
+    	memset(randomPassword, 0, RAND_PASS_LEN);
     }
+    
     return rv;
 }
 
@@ -1377,7 +1208,7 @@ static int keyutil_main(
     
          /*  Sanity check: Check cert validity against current time. */
     
-         /* XXX temporary hack for fips - must log in to get priv key */
+         /* for fips - must log in to get private key */
         if (slot && PK11_NeedLogin(slot)) {
             SECStatus newrv = PK11_Authenticate(slot, PR_TRUE, &accessPassword);
             if (newrv != SECSuccess) {
@@ -1385,22 +1216,6 @@ static int keyutil_main(
                             PK11_GetTokenName(slot));
                 goto shutdown;
             }
-        }
-        
-        /* Not sure we can validate yet */
-        if (PR_FALSE) {
-            rv = ValidateCert(certHandle, 
-                cert,
-                "tempnickname", 
-                NULL,    // ValidityTime, --> PR_Now
-                NULL,     // Usage.arg,    --> certificateUsageSSLServer
-                PR_TRUE, // VerifySig,
-                PR_TRUE, // DetailedInfo,
-                &accessPassword);
-            if (rv != SECSuccess && PR_GetError() == SEC_ERROR_INVALID_ARGS) {
-                SECU_PrintError(progName, "validation failed");
-                goto shutdown;
-            }       
         }
     }    
 
@@ -1436,14 +1251,10 @@ shutdown:
         SECKEY_DestroyPublicKey(pubkey);
     }
 
-    if (rv == SECSuccess) {
-    return 0;
-    } else {
-    return 255;
-    }
+    return rv == SECSuccess ? 0 : 255;
 }
 
-/* $Id: keyutil.c,v 1.2 2008/05/02 23:42:20 emaldonado Exp $ */
+/* $Id: keyutil.c,v 1.3 2008/05/03 22:54:55 emaldonado Exp $ */
 
 /* Key generation, encryption, and certificate utility code, based on
  * code from NSS's security utilities and the certutil application.  
@@ -1455,10 +1266,10 @@ int main(int argc, char **argv)
 {
     int optc, rv = 0;
     static const struct option options[] = {
-        { "command",    required_argument, NULL, 'c'},
-        { "subject",    required_argument, NULL, 's'},
-        { "gkeysize",   required_argument, NULL, 'g'},
-        { "validity",   required_argument, NULL, 'v'},
+        { "command",    required_argument, NULL, 'c' },
+        { "subject",    required_argument, NULL, 's' },
+        { "gkeysize",   required_argument, NULL, 'g' },
+        { "validity",   required_argument, NULL, 'v' },
         { "encpwdfile", required_argument, NULL, 'e' },
         { "filepwdnss", required_argument, NULL, 'f' },
         { "digest",     required_argument, NULL, 'd' },
@@ -1468,6 +1279,7 @@ int main(int argc, char **argv)
         { "output",     required_argument, NULL, 'o' }, /* reg, cert, enckey */
         { "keyout",     required_argument, NULL, 'k' }, /* plaintext key */
         { "ascii",      no_argument,       NULL, 'a' }, /* ascii */
+        { "help",       no_argument,       NULL, 'h' },
         { NULL }
     };
     char *cmdstr = NULL;
@@ -1487,10 +1299,8 @@ int main(int argc, char **argv)
     SECStatus status = 0;
     CommandType cmd = cmd_CertReq;
     PRBool initialized = PR_FALSE;
-    
-    progName = argv[0];
-    
-    while ((optc = getopt_long(argc, argv, "ac:s:g:v:e:f:d:z:i:p:o:k:", options, NULL)) != -1) {
+  
+    while ((optc = getopt_long(argc, argv, "ac:s:g:v:e:f:d:z:i:p:o:k:h", options, NULL)) != -1) {
         switch (optc) {
         case 'a':
             ascii = PR_TRUE;
@@ -1498,10 +1308,7 @@ int main(int argc, char **argv)
         case 'c':
             cmdstr = strdup(optarg);
             printf("cmdstr: %s\n", cmdstr);
-            if (strcmp(cmdstr, "importkey") == 0) {
-                cmd = cmd_ImportKey;
-                printf("\ncmd_ImportKey\n");  
-            } else if (strcmp(cmdstr, "genreq") == 0) {
+            if (strcmp(cmdstr, "genreq") == 0) {
                 cmd = cmd_CertReq;
                 printf("\ncmd_CertReq\n");
             } else if (strcmp(cmdstr, "makecert") == 0) {
@@ -1555,6 +1362,9 @@ int main(int argc, char **argv)
             keyoutfile = strdup(optarg);
             printf("output key written to %s\n", keyoutfile);
             break;
+        case 'h':
+        	Usage(progName);
+            break;
         default:
             printf("Bad arguments\n");
             Usage(progName);
@@ -1588,9 +1398,6 @@ int main(int argc, char **argv)
                 noisefile, access_pwd_file, key_pwd_file,
                 subject, keysize, warpmonths, validity_months,
                 ascii, "tmprequest", outfile, keyoutfile);
-        break;
-    case cmd_ImportKey:
-        rv = ImportKey(certHandle, key_pwd_file, keyfile, PR_TRUE);
         break;
     default:
         printf("\nEntered an inconsistent state, bailing out\n");
