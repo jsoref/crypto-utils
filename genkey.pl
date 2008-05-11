@@ -69,7 +69,7 @@ sub usage
 {
     print STDERR <<EOH;
 Usage: genkey [options] servername
-    --test   Test mode, skip random data creation, overwrite existing key
+    --test   Test mode, faster seeding, overwrite existing key
     --genreq Just generate a CSR from an existing key
     --makeca Generate a private CA key instead
     --days   Days until expiry of self-signed certificate (default 30)
@@ -168,6 +168,9 @@ if (!$genreq_mode && -f $keyfile && !$overwrite_key) {
     exit 1;
 }
 
+# Either mod_nss or mod_ssl is required
+requireModule();
+
 # For mod_nss we need these variables set
 if ($nss) {
     # the configuration file is required
@@ -204,7 +207,7 @@ if ($genreq_mode) {
         getkeysizeWindow,
         customKeySizeWindow,
         getRandomDataWindow,
-        keyPasswordWindow,
+        passwordWindow,
         genReqWindow,
 		);
     $doingwhat="CSR generation";
@@ -213,7 +216,7 @@ if ($genreq_mode) {
 		getkeysizeWindow,
 		customKeySizeWindow,
 		getRandomDataWindow,
-		keyPasswordWindow,
+		passwordWindow,
 		genCACertWindow,
 		);
     $doingwhat="CA cert generation";
@@ -223,7 +226,7 @@ if ($genreq_mode) {
 		customKeySizeWindow,
 		getRandomDataWindow,
 		wantCAWindow,
-		keyPasswordWindow,
+		passwordWindow,
 		genReqWindow,
         genReqWindow,
         genCertWindow,
@@ -303,6 +306,22 @@ sub NextBackCancelButton {
       ->Add(0, 0, $nextb, Newt::NEWT_ANCHOR_RIGHT(), 0, 1, 0, 0)
 	  ->Add(1, 0, $backb, Newt::NEWT_ANCHOR_RIGHT(), 1, 1, 0, 0)
 	      ->Add(2, 0, $cancelb, Newt::NEWT_ANCHOR_LEFT(), 1, 1, 0, 0);
+}
+
+# Require that this Apache module (mod_nss or mod_ssl) be installed
+sub requireModule {
+
+    my $module = $nss ? "mod_nss" : "mod_ssl";	
+    my $not_installed_msg = `rpm -q $module | grep "not installed"`;
+	
+	if ($not_installed_msg) {
+        Newt::newtWinMessage("Error", "Close", 
+        "$not_installed_msg".
+        "\nIt is required to generate this type of CSRs or certs".
+        "for this host:\n\nPress return to exit");
+        Newt::Finished();
+        exit 1;
+    }	
 }
 
 # Check that nss.conf exists
@@ -652,7 +671,7 @@ EOT
     $panel = Newt::Panel(1, 3, "Module access");
     $panel->Add(0, 0, Newt::Textbox(70, 5, 0, $message));
 
-    my $checkbox = Newt::Checkbox("Does the module require a password");
+    my $checkbox = Newt::Checkbox("Module access password if any");
     $panel->Add(0, 1, $checkbox);
     $panel->Add(0, 2, NextBackCancelButton());
 
@@ -714,7 +733,7 @@ EOT
 # Prompts for key encryption password 
 # When using NSS it prompts for the
 # module acces password instead.
-sub keyPasswordWindow
+sub passwordWindow
 {
 	return moduleAccesPasswordWindow() if $nss;
 	
@@ -924,11 +943,10 @@ sub makeCertOpenSSL
 
     use integer;
     my $months = $days ? $days / 30 : 24;
-    my $keysize = $bits;
 
     # build the arguments for a gen cert call, self-signed
     my $args = "-c makecert ";
-    $args   .= "-g $keysize ";
+    $args   .= "-g $bits ";
     $args   .= "-s $subject ";
     $args   .= "-v $months "; 
     $args   .= "-a ";              ## using ascii 
@@ -939,7 +957,7 @@ sub makeCertOpenSSL
     $args   .= "-o $certfile ";
     $args   .= "-k $keyfile";
 
-    nssUtilCmd("$ssltop/keyutil", $args);    
+    nssUtilCmd("$bindir/keyutil", $args);    
 
     if (!-f $certfile) {
         Newt::newtWinMessage("Error", "Close", 
@@ -985,7 +1003,7 @@ sub genRequestOpenSSL
               # user wants the key in the clear
     $args   .= "-z $noisefile "  if $noisefile;
  
-    nssUtilCmd("$ssltop/keyutil", $args);
+    nssUtilCmd("$bindir/keyutil", $args);
          
     unlink($noisefile);
     Newt::Resume();
