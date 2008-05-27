@@ -50,7 +50,7 @@ sub InitRoot
 
     Newt::Cls();
     Newt::DrawRootText(0, 0, 
-		       "Red Hat Keypair Generation (c) 2007 Red Hat, Inc.");
+		       "Red Hat Keypair Generation (c) 2008 Red Hat, Inc.");
 
     if ($help == 1) {
 	Newt::PushHelpLine("  <Tab>/<Alt-Tab> between elements  |" .
@@ -131,7 +131,7 @@ GetOptions('test|t' => \$test_mode,
 	   'makeca' => \$ca_mode) or usage();
 usage() unless @ARGV != 0;
 $skip_random = $test_mode;
-$overwrite_key = $test_mode && !$nss;
+$overwrite_key = $test_mode;
 $servername = $ARGV[0];
 $randfile = $ssltop."/.rand.".$$;
 $tmpPasswordFile = ''; # none has been created yet
@@ -152,22 +152,6 @@ InitRoot(1);
 
 local $SIG{__DIE__} = sub { @err=@_; Newt::Finished(); die @err;};
 
-#
-# Does the key already exist? don't overwrite
-#
-
-if (!$genreq_mode && -f $keyfile && !$overwrite_key) {
-    Newt::newtWinMessage("Error", "Close", 
-		"You already have a key file for this host in file:\n\n" .
-		$keyfile . "\n\n" .
-		"This script will not overwrite an existing key.\n" . 
-		"You will need to remove or rename this file in order to" .
-		"generate a new key for this host, then run\n" .
-		"\"genkey $servername\"");
-    Newt::Finished();
-    exit 1;
-}
-
 # Either mod_nss or mod_ssl is required
 requireModule();
 
@@ -185,6 +169,23 @@ if ($nss) {
     $modNssDbDir = getModNSSDatabase();
     $nssNickname = getNSSNickname();
     $nssDBPrefix = getNSSDBPrefix();
+}
+
+#
+# Does the key already exist? don't overwrite
+#
+
+if (!$nss) {
+if (!$genreq_mode && -f $keyfile && !$overwrite_key) {
+    Newt::newtWinMessage("Error", "Close", 
+		"You already have a key file for this host in file:\n\n" .
+		$keyfile . "\n\n" .
+		"This script will not overwrite an existing key.\n" . 
+		"You will need to remove or rename this file in order to" .
+		"generate a new key for this host, then rerun the command");
+    Newt::Finished();
+    exit 1;
+}
 }
 
 ######################################################################
@@ -228,7 +229,6 @@ if ($genreq_mode) {
 		wantCAWindow,
 		passwordWindow,
 		genReqWindow,
-        genReqWindow,
         genCertWindow,
         ### @EXTRA@ ### Leave this comment here.
         );
@@ -849,6 +849,7 @@ sub nssUtilCmd {
 
     Newt::Suspend();
     print STDOUT "$cmd $args"."\n";
+    $! = '';
     system("$cmd $args");
     # change to system("gdb $cmd");
     # to break into the debugger
