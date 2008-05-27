@@ -57,10 +57,10 @@ test-makecert-modssl: genkey
 	perl ./genkey --makeca test.`hostname`
 
 test-genreq-modnss: genkey
-	perl ./genkey --genreq -nss test.`hostname`
+	perl ./genkey --genreq --nss test.`hostname`
 
 test-makecert-modnss: genkey
-	perl ./genkey --makeca -nss test.`hostname`
+	perl ./genkey --makeca --nss test.`hostname`
 
 prepare-tests:
 	mkdir -p certs private
