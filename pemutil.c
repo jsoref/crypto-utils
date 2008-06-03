@@ -80,16 +80,6 @@
 #include <base64.h>
 #include <assert.h>
 
-/* TODO: When CERT_NewTempCertificate becomes public in NSS 3.12
- * remove this extern declaration and the following #define.
- */
-extern CERTCertificate *
-__CERT_NewTempCertificate(CERTCertDBHandle *handle, SECItem *derCert,
-              char *nickname, PRBool isperm, PRBool copyDER);
-
-#define CERT_NewTempCertificate __CERT_NewTempCertificate
-
-
 #define TIME_BUF_SIZE 100
 
 /* decode a SECItem containing either a SEC_ASN1_GENERALIZED_TIME 
