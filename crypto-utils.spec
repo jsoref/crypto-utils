@@ -29,12 +29,8 @@ License: MIT and GPLv2+
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: nss-devel, pkgconfig, newt-devel, xmlto
 BuildRequires: perl-devel, perl(Newt), perl(ExtUtils::MakeMaker)
-# FIXME: Remove this line when done testing
-BuildRequires: httpd, mod_ssl, mod_nss, nss, nss-tools
 Requires: perl(Newt), nss >= 3.11.99
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
-# FIXME: Remove this line when done testing
-Requires: httpd, mod_ssl, mod_nss, nss, nss-tools
 Obsoletes: crypto-rand
 
 %description
