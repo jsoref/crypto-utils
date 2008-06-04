@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4
-Release: 1
+Release: 2
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -29,8 +29,12 @@ License: MIT and GPLv2+
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: nss-devel, pkgconfig, newt-devel, xmlto
 BuildRequires: perl-devel, perl(Newt), perl(ExtUtils::MakeMaker)
+# FIXME: Remove this line when done testing
+BuildRequires: httpd, mod_ssl, mod_nss, nss, nss-tools
 Requires: perl(Newt), nss >= 3.11.99
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
+# FIXME: Remove this line when done testing
+Requires: httpd, mod_ssl, mod_nss, nss, nss-tools
 Obsoletes: crypto-rand
 
 %description
@@ -131,6 +135,13 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Tue Jun 03 2008 Elio Maldonado <emaldona@redhat.com> - 2.4-2
+- removed unneeded declaration in pemutil
+
+* Tue Jun 03 2008 Elio Maldonado <emaldona@redhat.com> - 2.4-1
+- crypto-utils ported to use NSS for cryptography (#346731)
+- updated documentation accordingly
+
 * Mon Mar  3 2008 Tom "spot" Callaway <tcallawa@redhat.com> - 2.3-10
 - rebuild for new perl again
 
