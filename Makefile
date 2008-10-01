@@ -56,6 +56,18 @@ test-genreq-modssl: genkey
 test-makecert-modssl: genkey
 	perl ./genkey --makeca test.`hostname`
 
+test-renew-modssl: genkey
+	perl ./genkey --genreq --renew `hostname`
+
+test-keyutil-renew-modssl: keyutil
+	./keyutil --command genreq --validity 24 --out server.csr --renew /etc/pki/tls/certs/server.crt --input /etc/pki/tls/private/server.key
+
+test-keyutil-renew-modssl-ca: keyutil
+	./keyutil --command genreq --validity 24 --out server.csr --renew --ca /etc/pki/tls/certs/server.crt --input /etc/pki/tls/private/server.key
+
+test-renew-modnss: genkey
+	perl ./genkey --genreq --renew --nss `hostname`
+
 test-genreq-modnss: genkey
 	perl ./genkey --genreq --nss test.`hostname`
 
@@ -87,5 +99,3 @@ man-keyrand: keyrand.xml date.xml version.xml
 man-certwatch: certwatch.xml date.xml version.xml
 	xmlto man certwatch.xml
 	man ./certwatch.1
-
-
