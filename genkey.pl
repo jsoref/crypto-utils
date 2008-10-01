@@ -70,9 +70,11 @@ sub usage
     print STDERR <<EOH;
 Usage: genkey [options] servername
     --test   Test mode, faster seeding, overwrite existing key
-    --genreq Just generate a CSR from an existing key
-    --makeca Generate a private CA key instead
+    --genreq Generate a Certificate Signing Request (CSR)
+    --makeca Generate a self-signed certificate for a CA
     --days   Days until expiry of self-signed certificate (default 30)
+    --renew  CSR is for cert renewal, reusing existing key pair
+    --isca   Renewal is for a CA certificate
     --nss    Use the nss database for keys and certificates
 EOH
     exit 1;
@@ -121,12 +123,16 @@ my $genreq_mode = '';
 my $ca_mode = '';
 my $cert_days = 30;
 my $nss ='';
+my $renew = '';
+my $isca = '';
 my $modNssDbDir = '';
 my $nssNickname = '';
 my $nssDBPrefix = '';
 GetOptions('test|t' => \$test_mode, 
 	   'genreq' => \$genreq_mode,
        'days=i' => \$cert_days,
+	   'renew'  => \$renew,
+	   'isca'  => \$isca,
        'nss|n'  => \$nss,
 	   'makeca' => \$ca_mode) or usage();
 usage() unless @ARGV != 0;
@@ -176,16 +182,29 @@ if ($nss) {
 #
 
 if (!$nss) {
-if (!$genreq_mode && -f $keyfile && !$overwrite_key) {
-    Newt::newtWinMessage("Error", "Close", 
+    if (!$genreq_mode && -f $keyfile && !$overwrite_key) {
+        Newt::newtWinMessage("Error", "Close", 
 		"You already have a key file for this host in file:\n\n" .
 		$keyfile . "\n\n" .
 		"This script will not overwrite an existing key.\n" . 
 		"You will need to remove or rename this file in order to" .
 		"generate a new key for this host, then rerun the command");
-    Newt::Finished();
-    exit 1;
-}
+        Newt::Finished();
+        exit 1;
+    }
+} else {
+    # check for the key in the database
+    if (!$genreq_mode && keyInDatabase($nssNickname,$modNssDbDir) &&
+        !$renew && !$overwrite_key) {
+        Newt::newtWinMessage("Error", "Close", 
+		    "You already have a key file for this host in the datatabase:\n\n" .
+		    "$modNssDbDir" ." with nickname ". "$nssNickname" . "\n\n" .
+		    "This script will not overwrite an existing key.\n" . 
+		    "You will need to remove or rename the database in order to" .
+		    "generate a new key for this host, then rerun the command");
+        Newt::Finished();
+       exit 1;
+    }
 }
 
 ######################################################################
@@ -204,13 +223,14 @@ if (!$genreq_mode && -f $keyfile && !$overwrite_key) {
 my @windows;
 if ($genreq_mode) {
     $useca = 1;
-    @windows = (
-        getkeysizeWindow,
+    @windows = $renew 
+        ? (passwordWindow,genReqWindow,) 
+        : (getkeysizeWindow,
         customKeySizeWindow,
         getRandomDataWindow,
         passwordWindow,
         genReqWindow,
-		);
+        );
     $doingwhat="CSR generation";
 } elsif ($ca_mode) {
     @windows = (CAwelcomeWindow,
@@ -391,6 +411,36 @@ sub clearSensitiveData {
        close(DOOMED);
        unlink($tmpPasswordFile);
     }
+}
+
+# Remove a directory and its contents
+sub removeDirectory {
+    my ($dir) = @_;
+    if (-f $dir) {
+        opendir(DOOMED, $dir) || die("Cannot open directory");
+        my @thefiles= readdir(DOOMED);
+        foreach my $file (@thefiles) {
+            unlink @file;
+        }
+        closedir(DOOMED);
+    	rmdir $dir;
+    }
+}
+
+# Print error message
+sub printError {
+    my ($msg) = @_;
+    Newt::Suspend();
+    print STDERR "$msg\n";
+    Newt::Resume();
+}
+
+# Is the given key in the database?
+sub keyInDatabase {
+    my ($nickname, $dbdir) = @_;
+    my $tmp = "tmp";
+    my $answer = `$bindir/certutil -L -d $dbdir | grep $nickname`;
+    return $answer;
 }
 
 ######################################################################
@@ -735,7 +785,8 @@ EOT
 # module acces password instead.
 sub passwordWindow
 {
-	return moduleAccesPasswordWindow() if $nss;
+    return moduleAccesPasswordWindow() if $nss;
+    return "Next" if $renew;
 	
     my $message = <<EOT;
 At this stage you can set the passphrase on your private key. If you
@@ -869,7 +920,8 @@ sub makeCertNSS
     # If no days specified it's a ca so use 2 years
     use integer;
     my $months = $days / 30;      
-    my $trustargs = "\"" . "TCu,TCu,TCuw". "\"";
+    my $trustargs = $ca_mode ? "CT,," : "u,,";
+    $trustargs = "\"" . $trustargs. "\"";
     
     my $args = "-S ";
     $args .= "-n $nickname ";
@@ -991,7 +1043,7 @@ sub genRequestOpenSSL
 
     use integer;
     my $months = $days ? $days / 30 : 24;
-            
+    
     # build the arguments for a gen request call
     my $args = "-c genreq ";
     $args   .= "-g $bits "; 
@@ -1027,6 +1079,69 @@ sub genRequestOpenSSL
         Newt::newtWinMessage("Error", "Close",
                  "Could not set permissions of private key file.\n".
                  "$keyfile");
+        Newt::Finished();
+        exit 1;
+    }
+}
+
+# Renew a certificate which is stored in the nss database
+sub renewCertNSS
+{
+    my ($csrfile, $dbdir, $dbprefix, $nickname, $days, $pwdfile) = @_;
+
+    use integer;
+    my $months = $days ? $days / 30 : 24;
+    
+    # Build the arguments for a certificate renewal request
+    # This is a request where we reuse the existing key pair
+    
+    my $args = "-R ";
+    $args   .= "-d $dbdir ";
+    $args   .= "-p $dbprefix " if $dbprefix;
+    $args   .= "-a ";              ## using ascii 
+    $args   .= "-k $nickname ";    ## pass cert nickname as key id
+    $args   .= "-f $pwdfile "   if $pwdfile;
+    $args   .= "-v $months ";
+    $args   .= "-o $csrfile ";
+    
+    nssUtilCmd("$bindir/certutil", $args);
+    
+    if (!-f $csrfile) {
+        Newt::newtWinMessage("Error", "Close", 
+                 "Was not able to create a CSR for this ".
+                 "host:\n\nPress return to exit");
+        Newt::Finished();
+        exit 1; 
+    }
+}
+
+# Renew a certificate which is stored in a PEM file
+sub renewCertOpenSSL
+{
+    my ($csrfile, # output
+        $certfile,$keyfile,$days,$isca) = @_;
+
+    use integer;
+    my $months = $days ? $days / 30 : 24;
+    
+    # Build the arguments for a certificate renewal request
+    # This is a request where we reuse the existing key pair
+
+    my $args = "--command genreq ";
+    $args   .= "--renew $certfile "; 
+    $args   .= "--input $keyfile "; 
+    $args   .= "--validity $months "; 
+    $args   .= "--out $csrfile ";
+ 
+    nssUtilCmd("$bindir/keyutil", $args);
+         
+    unlink($noisefile);
+    Newt::Resume();
+    
+    if (!-f $csrfile) {
+        Newt::newtWinMessage("Error", "Close", 
+                 "Unable to create a cert signing request for this ".
+                 "host:\n\nPress return to exit");
         Newt::Finished();
         exit 1;
     }
@@ -1193,18 +1308,69 @@ EOT
     return $ret;
 }
 
+# Cert signing request generation for renewal
+sub renewCert
+{
+    my ($csrfile) = @_;
+
+    my $tempDbDir = "/tmp/nss.".$$;
+
+    # Get a comfirmation
+    my $msg = "You are about to issue a certificate renewal";
+    my $panel = Newt::Panel(1, 2, "Certificate Renewal");
+    $panel->Add(0, 0, 
+            Newt::TextboxReflowed(60, 10, 10, 0, 
+            "Would you like to send a Certificate Request" .
+            "for\n\n$servername".
+            "\nto a Certificate Authority (CA)?"));
+
+    $panel->Add(0, 1, DoubleButton("Yes", "No"));
+    $ret = &RunForm($panel);
+    $panel->Hide();
+    undef $panel;
+
+    return "Cancel" if $ret eq "Cancel";
+   
+    # Cert to renew could be in the nss database or in a pem file
+
+    if ($nss) {
+        # Renew cert in the nss database
+        renewCertNSS(
+            $csrfile,
+            $modNssDbDir,
+            $nssDBPrefix,
+            $nssNickname,
+            $days,
+            $tmpPasswordFile);
+    	
+    } else {	
+        # Renew cert in a PEM file
+        renewCertOpenSSL(
+            $csrfile,
+            $certfile, # contains cert to renew
+            $keyfile,  # contains encrypted private key
+            $days, 
+            $isca);
+
+    	## FIXME don't harcode password - keypwdfile and I
+    	## though it was the p12 file pwd
+    }
+}
+
 sub genReqWindow
 {
     return "Skip" unless $useca;
 
     $keyfile = $ssltop."/private/".$servername.".key";
-    $certfile = $ssltop."/certs/".$servername.".cert";
+    $certfile = $ssltop."/certs/".$servername.".crt";
     
     $num = 0;
     while (-f $ssltop."/certs/".$servername.".$num.csr") {
 	$num++;
     }
     $csrfile = $ssltop."/certs/".$servername.".$num.csr";
+    
+    return renewCert($csrfile) if $renew;
     
     my $msg = "You are about to be asked to enter information that will be ".
 	"incorporated into your certificate request to a CA. What you are about to ".
