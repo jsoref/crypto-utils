@@ -130,10 +130,10 @@ my $nssNickname = '';
 my $nssDBPrefix = '';
 GetOptions('test|t' => \$test_mode, 
 	   'genreq' => \$genreq_mode,
-       'days=i' => \$cert_days,
+           'days=i' => \$cert_days,
 	   'renew'  => \$renew,
-	   'isca'  => \$isca,
-       'nss|n'  => \$nss,
+	   'isca'   => \$isca,
+           'nss|n'  => \$nss,
 	   'makeca' => \$ca_mode) or usage();
 usage() unless @ARGV != 0;
 $skip_random = $test_mode;
@@ -226,11 +226,11 @@ if ($genreq_mode) {
     @windows = $renew 
         ? (passwordWindow,genReqWindow,) 
         : (getkeysizeWindow,
-        customKeySizeWindow,
-        getRandomDataWindow,
-        passwordWindow,
-        genReqWindow,
-        );
+           customKeySizeWindow,
+           getRandomDataWindow,
+           passwordWindow,
+           genReqWindow,
+           );
     $doingwhat="CSR generation";
 } elsif ($ca_mode) {
     @windows = (CAwelcomeWindow,
