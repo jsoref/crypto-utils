@@ -101,6 +101,12 @@
 
 #include "secutil.h"
 
+#if(0)
+static char consoleName[] =  {
+    "/dev/tty"
+};
+#endif
+
 char *
 SECU_GetString(int16 error_number)
 {
@@ -162,25 +168,25 @@ SECU_PrintAsHex(FILE *out, SECItem *data, const char *m, int level)
     unsigned int limit = 15;
 
     if ( m ) {
-    SECU_Indent(out, level); fprintf(out, "%s:\n", m);
-    level++;
+        SECU_Indent(out, level); fprintf(out, "%s:\n", m);
+        level++;
     }
     
     SECU_Indent(out, level); column = level*INDENT_MULT;
     if (!data->len) {
-    fprintf(out, "(empty)\n");
-    return;
+        fprintf(out, "(empty)\n");
+        return;
     }
     /* take a pass to see if it's all printable. */
     for (i = 0; i < data->len; i++) {
-    unsigned char val = data->data[i];
+        unsigned char val = data->data[i];
         if (!val || !isprint(val)) {
-        isString = PR_FALSE;
-        break;
-    }
-    if (isWhiteSpace && !isspace(val)) {
-        isWhiteSpace = PR_FALSE;
-    }
+            isString = PR_FALSE;
+            break;
+        }
+        if (isWhiteSpace && !isspace(val)) {
+            isWhiteSpace = PR_FALSE;
+        }
     }
 
     /* Short values, such as bit strings (which are printed with this
@@ -190,47 +196,47 @@ SECU_PrintAsHex(FILE *out, SECItem *data, const char *m, int level)
     ** The threshold size (4 bytes) is arbitrary.
     */
     if (!isString || data->len <= 4) {
-      for (i = 0; i < data->len; i++) {
-    if (i != data->len - 1) {
-        fprintf(out, "%02x:", data->data[i]);
-        column += 3;
-    } else {
-        fprintf(out, "%02x", data->data[i]);
-        column += 2;
-        break;
-    }
-    if (column > 76 || (i % 16 == limit)) {
-        secu_Newline(out);
-        SECU_Indent(out, level); 
-        column = level*INDENT_MULT;
-        limit = i % 16;
-    }
-      }
-      printedHex = PR_TRUE;
-    }
-    if (isString && !isWhiteSpace) {
-    if (printedHex != PR_FALSE) {
-        secu_Newline(out);
-        SECU_Indent(out, level); column = level*INDENT_MULT;
-    }
-    for (i = 0; i < data->len; i++) {
-        unsigned char val = data->data[i];
-
-        if (val) {
-        fprintf(out,"%c",val);
-        column++;
-        } else {
-        column = 77;
+        for (i = 0; i < data->len; i++) {
+            if (i != data->len - 1) {
+                fprintf(out, "%02x:", data->data[i]);
+                column += 3;
+            } else {
+                fprintf(out, "%02x", data->data[i]);
+                column += 2;
+                break;
+            }
+            if (column > 76 || (i % 16 == limit)) {
+            	secu_Newline(out);
+            	SECU_Indent(out, level); 
+            	column = level*INDENT_MULT;
+            	limit = i % 16;
+            }
         }
-        if (column > 76) {
-        secu_Newline(out);
-            SECU_Indent(out, level); column = level*INDENT_MULT;
-        }
+        printedHex = PR_TRUE;
     }
-    }
+	if (isString && !isWhiteSpace) {
+	    if (printedHex != PR_FALSE) {
+	        secu_Newline(out);
+	        SECU_Indent(out, level); column = level*INDENT_MULT;
+	    }
+	    for (i = 0; i < data->len; i++) {
+	        unsigned char val = data->data[i];
+	
+	        if (val) {
+	        	fprintf(out,"%c",val);
+	        	column++;
+	        } else {
+	        	column = 77;
+	        }
+	        if (column > 76) {
+	        	secu_Newline(out);
+	            SECU_Indent(out, level); column = level*INDENT_MULT;
+	        }
+	    }
+	}
         
     if (column != level*INDENT_MULT) {
-    secu_Newline(out);
+    	secu_Newline(out);
     }
 }
 
@@ -239,30 +245,29 @@ SECOidTag
 SECU_PrintObjectID(FILE *out, SECItem *oid, char *m, int level)
 {
     SECOidData *oiddata;
-    char *      oidString = NULL;
+    char *oidString = NULL;
     
     oiddata = SECOID_FindOID(oid);
     if (oiddata != NULL) {
-    const char *name = oiddata->desc;
-    SECU_Indent(out, level);
-    if (m != NULL)
-        fprintf(out, "%s: ", m);
-    fprintf(out, "%s\n", name);
-    return oiddata->offset;
+	    const char *name = oiddata->desc;
+	    SECU_Indent(out, level);
+	    if (m != NULL)
+	        fprintf(out, "%s: ", m);
+	    fprintf(out, "%s\n", name);
+	    return oiddata->offset;
     } 
     oidString = CERT_GetOidString(oid);
     if (oidString) {
-    SECU_Indent(out, level);
-    if (m != NULL)
-        fprintf(out, "%s: ", m);
-    fprintf(out, "%s\n", oidString);
-    PR_smprintf_free(oidString);
-    return SEC_OID_UNKNOWN;
+	    SECU_Indent(out, level);
+	    if (m != NULL)
+	        fprintf(out, "%s: ", m);
+	    fprintf(out, "%s\n", oidString);
+	    PR_smprintf_free(oidString);
+	    return SEC_OID_UNKNOWN;
     }
     SECU_PrintAsHex(out, oid, m, level);
     return SEC_OID_UNKNOWN;
 }
-
 
 void
 SECU_PrintSystemError(char *progName, char *msg, ...)
@@ -274,6 +279,199 @@ SECU_PrintSystemError(char *progName, char *msg, ...)
     vfprintf(stderr, msg, args);
     fprintf(stderr, ": %s\n", strerror(errno));
     va_end(args);
+}
+
+#if(0)
+static void
+secu_ClearPassword(char *p)
+{
+    if (p) {
+	PORT_Memset(p, 0, PORT_Strlen(p));
+	PORT_Free(p);
+    }
+}
+
+char *
+SECU_GetPasswordString(void *arg, char *prompt)
+{
+    char *p = NULL;
+    FILE *input, *output;
+
+    /* open terminal */
+    input = fopen(consoleName, "r");
+    if (input == NULL) {
+	fprintf(stderr, "Error opening input terminal for read\n");
+	return NULL;
+    }
+
+    output = fopen(consoleName, "w");
+    if (output == NULL) {
+	fprintf(stderr, "Error opening output terminal for write\n");
+	return NULL;
+    }
+
+    p = SEC_GetPassword (input, output, prompt, SEC_BlindCheckPassword);
+        
+    fclose(input);
+    fclose(output);
+
+    return p;
+}
+#endif
+
+
+/*
+ *  p a s s w o r d _ h a r d c o d e 
+ *
+ *  A function to use the password passed in the -f(pwfile) argument
+ *  of the command line.  
+ *  After use once, null it out otherwise PKCS11 calls us forever.?
+ *
+ */
+char *
+SECU_FilePasswd(PK11SlotInfo *slot, PRBool retry, void *arg)
+{
+    char* phrases, *phrase;
+    PRFileDesc *fd;
+    PRInt32 nb;
+    const char *pwFile = (const char *)arg;
+    int i;
+    const long maxPwdFileSize = 4096;
+    char* tokenName = NULL;
+    int tokenLen = 0;
+    
+    if (!pwFile) {
+	    return 0;
+    }
+
+    if (retry) {
+    	return 0;  /* no good retrying - the files contents will be the same */
+    }
+
+    phrases = PORT_ZAlloc(maxPwdFileSize);
+
+    if (!phrases) {
+        return 0; /* out of memory */
+    }
+ 
+    fd = PR_Open(pwFile, PR_RDONLY, 0);
+    if (!fd) {
+	    fprintf(stderr, "No password file \"%s\" exists.\n", pwFile);
+        PORT_Free(phrases);
+	    return NULL;
+    }
+
+    nb = PR_Read(fd, phrases, maxPwdFileSize);
+  
+    PR_Close(fd);
+
+    if (nb == 0) {
+        fprintf(stderr,"password file contains no data\n");
+        PORT_Free(phrases);
+        return NULL;
+    }
+
+    if (slot) {
+        tokenName = PK11_GetTokenName(slot);
+        if (tokenName) {
+            tokenLen = PORT_Strlen(tokenName);
+        }
+    }
+    i = 0;
+    do {
+        int startphrase = i;
+        int phraseLen;
+
+        /* handle the Windows EOL case */
+        while (phrases[i] != '\r' && phrases[i] != '\n' && i < nb) i++;
+        /* terminate passphrase */
+        phrases[i++] = '\0';
+        /* clean up any EOL before the start of the next passphrase */
+        while ( (i<nb) && (phrases[i] == '\r' || phrases[i] == '\n')) {
+            phrases[i++] = '\0';
+        }
+        /* now analyze the current passphrase */
+        phrase = &phrases[startphrase];
+        if (!tokenName)
+            break;
+        if (PORT_Strncmp(phrase, tokenName, tokenLen)) continue;
+        phraseLen = PORT_Strlen(phrase);
+        if (phraseLen < (tokenLen+1)) continue;
+        if (phrase[tokenLen] != ':') continue;
+        phrase = &phrase[tokenLen+1];
+        break;
+
+    } while (i<nb);
+
+    phrase = PORT_Strdup((char*)phrase);
+    PORT_Free(phrases);
+    return phrase;
+}
+
+char *
+SECU_GetModulePassword(PK11SlotInfo *slot, PRBool retry, void *arg) 
+{
+#if(0)
+    char prompt[255];
+#endif
+    secuPWData *pwdata = (secuPWData *)arg;
+    secuPWData pwnull = { PW_NONE, 0 };
+    secuPWData pwxtrn = { PW_EXTERNAL, "external" };
+    char *pw;
+
+    if (pwdata == NULL)
+        pwdata = &pwnull;
+
+    if (PK11_ProtectedAuthenticationPath(slot)) {
+        pwdata = &pwxtrn;
+    }
+    if (retry && pwdata->source != PW_NONE) {
+        PR_fprintf(PR_STDERR, "Incorrect password/PIN entered.\n");
+        return NULL;
+    }
+
+    switch (pwdata->source) {
+#if(0)
+    case PW_NONE:
+        sprintf(prompt, "Enter Password or Pin for \"%s\":",
+	            PK11_GetTokenName(slot));
+        return SECU_GetPasswordString(NULL, prompt);
+#endif
+
+    case PW_FROMFILE:
+	    /* Instead of opening and closing the file every time, get the pw
+	     * once, then keep it in memory (duh).
+	     */
+	    pw = SECU_FilePasswd(slot, retry, pwdata->data);
+	    pwdata->source = PW_PLAINTEXT;
+	    pwdata->data = PL_strdup(pw);
+	    /* it's already been dup'ed */
+	    return pw;
+#if(0)
+    case PW_EXTERNAL:
+        sprintf(prompt, 
+	            "Press Enter, then enter PIN for \"%s\" on external device.\n",
+                PK11_GetTokenName(slot));
+        (void) SECU_GetPasswordString(NULL, prompt);
+    	/* Fall Through */
+#endif
+   case PW_PLAINTEXT:
+	    return PL_strdup(pwdata->data);
+    default:
+	    break;
+    }
+
+    PR_fprintf(PR_STDERR, "Password check failed:  No password found.\n");
+    return NULL;
+}
+
+/*
+ * Password callback so the user is not prompted to enter the password
+ * after the server starts.
+ */
+char *SECU_NoPassword(PK11SlotInfo *slot, PRBool retry, void *arg)
+{
+    return NULL;
 }
 
 SECStatus
@@ -347,6 +545,53 @@ SECU_FileToItem(SECItem *dst, PRFileDesc *src)
 loser:
     SECITEM_FreeItem(dst, PR_FALSE);
     dst->data = NULL;
+    return SECFailure;
+}
+
+SECStatus
+SECU_TextFileToItem(SECItem *dst, PRFileDesc *src)
+{
+    PRFileInfo info;
+    PRInt32 numBytes;
+    PRStatus prStatus;
+    unsigned char *buf;
+
+    if (src == PR_STDIN)
+	return secu_StdinToItem(dst);
+
+    prStatus = PR_GetOpenFileInfo(src, &info);
+
+    if (prStatus != PR_SUCCESS) {
+	PORT_SetError(SEC_ERROR_IO);
+	return SECFailure;
+    }
+
+    buf = (unsigned char*)PORT_Alloc(info.size);
+    if (!buf)
+	return SECFailure;
+
+    numBytes = PR_Read(src, buf, info.size);
+    if (numBytes != info.size) {
+	PORT_SetError(SEC_ERROR_IO);
+	goto loser;
+    }
+
+    if (buf[numBytes-1] == '\n') numBytes--;
+#ifdef _WINDOWS
+    if (buf[numBytes-1] == '\r') numBytes--;
+#endif
+
+    /* XXX workaround for 3.1, not all utils zero dst before sending */
+    dst->data = 0;
+    if (!SECITEM_AllocItem(NULL, dst, numBytes))
+	goto loser;
+
+    memcpy(dst->data, buf, numBytes);
+
+    PORT_Free(buf);
+    return SECSuccess;
+loser:
+    PORT_Free(buf);
     return SECFailure;
 }
 
@@ -497,4 +742,3 @@ SECU_SECItemHexStringToBinary(SECItem* srcdest)
     srcdest->len /= 2;
     return SECSuccess;
 }
-
