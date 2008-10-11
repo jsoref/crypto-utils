@@ -1438,6 +1438,10 @@ static int keyutil_main(
     int         rv;
     
     if (cert_to_renew && input_key_file) {
+        /*
+         * This certificate request is for a renewal,
+         * using existing keys.
+         */
     	CK_SLOT_ID slotID = 1;
     	char slotname[32];
     	char nickname[256];
@@ -1447,17 +1451,17 @@ static int keyutil_main(
     	/* Remove the path part */
         n = strrchr(cert_to_renew, '/');
         if (!n) 
-        	n = cert_to_renew;
+            n = cert_to_renew;
         else 
-        	n++;
+            n++;
 
         snprintf(slotname, 32, "PEM Token #%ld", slotID);
         snprintf(nickname, 256, "PEM Token #%ld:%s", slotID, n);
         slot = PK11_FindSlotByName(slotname);
         if (!slot) {
-        	printf("%s: Can't find slot for %s\n", progName, slotname);
-        	rv = 255;
-        	goto shutdown;
+            printf("%s: Can't find slot for %s\n", progName, slotname);
+            rv = 255;
+            goto shutdown;
         }
                
         rv = loadCertAndKey(slot,
@@ -1465,8 +1469,8 @@ static int keyutil_main(
                             &pwdata);
 
         if (rv != SECSuccess) {
-	        printf("%s: Can't load the key or cert, bailing out\n", progName);
-	        goto shutdown;
+	    printf("%s: Can't load the key or cert, bailing out\n", progName);
+	    goto shutdown;
         }
         
         rv = extractRSAKeysAndSubject(nickname, 
@@ -1484,27 +1488,29 @@ static int keyutil_main(
         assert(subject);
 
     } else {
-    	
-   slot = PK11_GetInternalKeySlot(); /* PK11_GetInternalSlot() ? */
+        /*
+         * This a certificate request for a bran-new cert,
+         * will generate a key pair
+         */
+        slot = PK11_GetInternalKeySlot(); /* PK11_GetInternalSlot() ? */
 
-    privkey = GenerateRSAPrivateKey(keytype, slot, 
+        privkey = GenerateRSAPrivateKey(keytype, slot, 
             keysize, 65537L, (char *)noisefile, &pubkey, &pwdata);
     
-    if (!privkey) {
-        PR_fprintf(PR_STDERR,
+        if (!privkey) {
+            PR_fprintf(PR_STDERR,
                 "%s Keypair generation failed: \"%d\"\n", 
                 progName, PORT_GetError());
-        rv = 255;
-        goto shutdown;
-    }
-    subject = CERT_AsciiToName((char *)subjectstr);
-    if (!subject) {
-        PR_fprintf(PR_STDERR, "%s -s: improperly formatted name: \"%s\"\n",
+            rv = 255;
+            goto shutdown;
+        }
+        subject = CERT_AsciiToName((char *)subjectstr);
+        if (!subject) {
+            PR_fprintf(PR_STDERR, "%s -s: improperly formatted name: \"%s\"\n",
                    progName, subjectstr);
-        rv = 255;
-        goto shutdown;
-    }
-
+            rv = 255;
+            goto shutdown;
+        }
     }
     PR_fprintf(PR_STDOUT, "%s Got a key\n", progName);
     
@@ -1654,7 +1660,7 @@ shutdown:
     return rv == SECSuccess ? 0 : 255;
 }
 
-/* $Id: keyutil.c,v 1.4 2008/05/11 02:53:02 emaldonado Exp $ */
+/* $Id: keyutil.c,v 1.5 2008/10/01 21:22:49 emaldonado Exp $ */
 
 /* Key generation, encryption, and certificate utility code, based on
  * code from NSS's security utilities and the certutil application.  
@@ -1768,7 +1774,7 @@ int main(int argc, char **argv)
             printf("output key written to %s\n", keyoutfile);
             break;
         case 'h':
-        	Usage(progName);
+            Usage(progName);
             break;
         default:
             printf("Bad arguments\n");
