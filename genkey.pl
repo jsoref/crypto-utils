@@ -73,7 +73,7 @@ Usage: genkey [options] servername
     --genreq Generate a Certificate Signing Request (CSR)
     --makeca Generate a self-signed certificate for a CA
     --days   Days until expiry of self-signed certificate (default 30)
-    --renew  CSR is for cert renewal, reusing existing key pair
+    --renew  CSR is for cert renewal, reusing existing key pair, openssl certs only
     --isca   Renewal is for a CA certificate
     --nss    Use the nss database for keys and certificates
 EOH
@@ -129,12 +129,12 @@ my $modNssDbDir = '';
 my $nssNickname = '';
 my $nssDBPrefix = '';
 GetOptions('test|t' => \$test_mode, 
-	   'genreq' => \$genreq_mode,
+           'genreq' => \$genreq_mode,
            'days=i' => \$cert_days,
-	   'renew'  => \$renew,
-	   'isca'   => \$isca,
+	       'renew'  => \$renew,
+           'isca'   => \$isca,
            'nss|n'  => \$nss,
-	   'makeca' => \$ca_mode) or usage();
+	       'makeca' => \$ca_mode) or usage();
 usage() unless @ARGV != 0;
 $skip_random = $test_mode;
 $overwrite_key = $test_mode;
@@ -1085,6 +1085,11 @@ sub genRequestOpenSSL
 }
 
 # Renew a certificate which is stored in the nss database
+# Do not call this routine yet as certutil does not support
+# certificate renewal in a convenient way for scripts. We must
+# wait until NSS 3.12.2 becomes available with the fix for
+# https://bugzilla.redhat.com/show_bug.cgi?id=346731
+# for this routine to work
 sub renewCertNSS
 {
     my ($csrfile, $dbdir, $dbprefix, $nickname, $days, $pwdfile) = @_;
@@ -1119,7 +1124,7 @@ sub renewCertNSS
 sub renewCertOpenSSL
 {
     my ($csrfile, # output
-        $certfile,$keyfile,$days,$isca) = @_;
+        $certfile,$keyfile,$days) = @_;
 
     use integer;
     my $months = $days ? $days / 30 : 24;
@@ -1335,22 +1340,29 @@ sub renewCert
 
     if ($nss) {
         # Renew cert in the nss database
-        renewCertNSS(
-            $csrfile,
-            $modNssDbDir,
-            $nssDBPrefix,
-            $nssNickname,
-            $days,
-            $tmpPasswordFile);
-    	
+        #
+        # Must wait until NSS 3.12.2 becomes available with the fix for
+        # https://bugzilla.redhat.com/show_bug.cgi?id=346731
+        # <<certutil -R for cert renewal should derive the subject 
+        #  from the cert if none is specified>>
+        #  
+        # renewCertNSS($csrfile, $modNssDbDir, $nssDBPrefix, $nssNickname, $days, $tmpPasswordFile);
+	    #
+        # Until then bail out.
+        #
+        Newt::newtWinMessage("Error", "Close", 
+                 "Certificate renewal with NSS database not yet supported:".
+                 "\n\nPress return to exit");
+        Newt::Finished();
+        exit 1; 
+          
     } else {	
         # Renew cert in a PEM file
         renewCertOpenSSL(
             $csrfile,
             $certfile, # contains cert to renew
             $keyfile,  # contains encrypted private key
-            $days, 
-            $isca);
+            $days);
 
     	## FIXME don't harcode password - keypwdfile and I
     	## though it was the p12 file pwd
