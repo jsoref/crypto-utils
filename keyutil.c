@@ -204,26 +204,29 @@ Usage(char *progName)
 }
 
 /*
- * Loads the key from the specified file into the module at
- * the specified slot and returns a key object.
+ * Loads the cert from the specified file into the module at
+ * the specified slot.
+ *
+ * This function is modelled after the one in libcurl.
+ *
+ * @param slot the slot to load the cert into
+ * @param cacert true if the cert is for a ca, false otherwise
+ * @param certfile pem encoded file with the certificate
+ * @param nickname the certificate niskanme
  */
-#if(0)
 static SECStatus loadCert(
     PK11SlotInfo *slot, 
+    PRBool cacert,
     const char *certfile,
     const char *nickname) 
 {
 	SECStatus rv = SECSuccess;
-    PRBool cacert = PR_FALSE;             /* only server certs for now */
     PK11GenericObject *genericObjCert;
     CK_ATTRIBUTE theCertTemplate[20];
     CK_ATTRIBUTE *attrs = NULL;
     CK_BBOOL cktrue = CK_TRUE;
     CK_BBOOL ckfalse = CK_FALSE;
     CK_OBJECT_CLASS certObjClass = CKO_CERTIFICATE;
-	PRBool isPresent;
-    PK11GenericObject *object;
-    CK_ATTRIBUTE theTemplate[20];
     CERTCertificate *cert = NULL;
 
     do {
@@ -246,7 +249,6 @@ static SECStatus loadCert(
         	rv = PR_GetError();
         	PR_fprintf(PR_STDERR, "%s: unable to Create object for cert, (%s)\n", 
                     progName, SECU_Strerror(rv));
-
             break;
         }
         if (!cacert) {
@@ -264,7 +266,7 @@ static SECStatus loadCert(
         	}
         } else {
         	rv = SECSuccess;
-        }    	
+        }
   	
     } while (0);
     
@@ -272,38 +274,34 @@ static SECStatus loadCert(
     	CERT_DestroyCertificate(cert);
     	
     return rv;
-
 }
-#endif
 
 /*
- * Loads the certificate from the specified file into the module at
- * the specified slot and returns a certificate object.
+ * Loads the key from the specified file into the module at
+ * the specified slot.
+ *
+ * function is modelled after the one in libcurl.
+ * @param slot the slot into which the key will be loaded
+ * @param keyfile the file from which the key will be read
+ * @param nickname the nickname of the matching certificate
  */
-#if(0)
 static SECStatus loadKey(
 		PK11SlotInfo *slot, 
 		const char *keyfile, 
 		const char *nickname,
-		CERTCertificate **keycert) 
+		secuPWData *pwdata) 
 {
 	SECStatus rv = SECSuccess;
     CK_ATTRIBUTE *attrs = NULL;
     CK_BBOOL cktrue = CK_TRUE;
-    CK_BBOOL ckfalse = CK_FALSE;
-
 	PRBool isPresent;
     PK11GenericObject *object;
     CK_ATTRIBUTE theTemplate[20];
     CK_OBJECT_CLASS objClass = CKO_PRIVATE_KEY;
     CERTCertificate *cert = NULL;
     SECKEYPrivateKey *privkey = NULL;
-    int retryCount = 0;
 
     do {   	
-        
-        /* must find it again because "reinsertion" */
-        cert = PK11_FindCertFromNickname((char *)nickname, NULL);
 
         attrs = theTemplate;
         PK11_SETATTRS(attrs, CKA_CLASS, &objClass, sizeof(objClass) ); attrs++;
@@ -312,10 +310,11 @@ static SECStatus loadKey(
 
         /* When adding an encrypted key the PKCS#11 will be set as removed */
         object = PK11_CreateGenericObject(slot, theTemplate, 3, PR_FALSE /* isPerm */);
-        if (!object) {  	
-            rv = PR_GetError();
-            PR_fprintf(PR_STDERR, 
-            		"%s: unable to create key object (%s)\n", 
+        if (!object) {
+        	rv = SEC_ERROR_BAD_KEY;
+        	PR_SetError(rv, 0);
+            PR_fprintf(PR_STDERR,
+                    "%s: unable to create key object (%s)\n", 
                     progName, SECU_Strerror(rv));
         	break;
         }
@@ -330,6 +329,10 @@ static SECStatus loadKey(
         	PR_fprintf(PR_STDERR, "Can't authenticate\n"); 
             break;
         }
+
+        /* must find it again because "reinsertion" */
+        cert = PK11_FindCertFromNickname((char *)nickname, NULL);
+        assert(cert);
 
         /* Can we find the key? */
 
@@ -348,9 +351,7 @@ static SECStatus loadKey(
     	CERT_DestroyCertificate(cert);
     	
     return rv;
-
 }
-#endif
 
 /*
  * Loads the certificate and private key from the specified files into 
@@ -364,119 +365,40 @@ static SECStatus loadKey(
  */
 static SECStatus loadCertAndKey(
 		PK11SlotInfo *slot, 
+		PRBool cacert,
 		const char *certfile, 
 		const char *nickname,
 		const char *keyfile,
 		secuPWData *pwdata)
 {
 	SECStatus rv = SECSuccess;
-    PRBool cacert = PR_FALSE;             /* only server certs for now */
-    PK11GenericObject *genericObjCert;
-    CK_ATTRIBUTE theCertTemplate[20];
-    CK_ATTRIBUTE *attrs = NULL;
-    CK_BBOOL cktrue = CK_TRUE;
-    CK_BBOOL ckfalse = CK_FALSE;
-    CK_OBJECT_CLASS certObjClass = CKO_CERTIFICATE;
-	PRBool isPresent;
-    PK11GenericObject *object;
-    CK_ATTRIBUTE theTemplate[20];
-    CK_OBJECT_CLASS objClass = CKO_PRIVATE_KEY;
-    CERTCertificate *cert = NULL;
-    SECKEYPrivateKey *privkey = NULL;
-    /*int retryCount = 0;*/
-
-    do {
-        /*
-         * Load the certificate
-         */
-    	attrs = theCertTemplate;
-        PK11_SETATTRS(attrs, CKA_CLASS, &certObjClass, sizeof(certObjClass)); attrs++;
-        PK11_SETATTRS(attrs, CKA_TOKEN, &cktrue, sizeof(CK_BBOOL)); attrs++;
-        PK11_SETATTRS(attrs, CKA_LABEL, (unsigned char *)certfile, strlen(certfile)+1); attrs++;
-        if (cacert) {
-            PK11_SETATTRS(attrs, CKA_TRUST, &cktrue, sizeof(CK_BBOOL) ); attrs++;
-        } else {
-            PK11_SETATTRS(attrs, CKA_TRUST, &ckfalse, sizeof(CK_BBOOL) ); attrs++;
-        }
-
-        /* Load the certificate in our PEM module into the appropriate slot. */
-        genericObjCert = PK11_CreateGenericObject(slot, theCertTemplate, 4, PR_FALSE /* isPerm */);
-        if (!genericObjCert) {
-        	rv = PR_GetError();
-        	PR_fprintf(PR_STDERR, "%s: unable to Create object for cert, (%s)\n", 
-                    progName, SECU_Strerror(rv));
-
-            break;
-        }
-        if (!cacert) {
-            /* Double-check that the certificate or nickname requested exists in
-             * either the token or the NSS certificate database.
-             */
-            cert = PK11_FindCertFromNickname((char *)nickname, NULL);
-        	if (!cert) {
-        		PR_fprintf(PR_STDERR, "%s: Can't find cert named (%s), bailing out\n", 
-        				   progName, nickname);
-        		rv = 255;
-        		break;
-        	} else {
-        	   rv = SECSuccess;
-        	}
-        } else {
-        	rv = SECSuccess;
-        }    	
-
-        /*
-         * Load the private key
-         */
-        
-        attrs = theTemplate;
-
-        PK11_SETATTRS(attrs, CKA_CLASS, &objClass, sizeof(objClass) ); attrs++;
-        PK11_SETATTRS(attrs, CKA_TOKEN, &cktrue, sizeof(CK_BBOOL) ); attrs++;
-        PK11_SETATTRS(attrs, CKA_LABEL, (unsigned char *)keyfile, strlen(keyfile)+1); attrs++;
-
-        /* When adding an encrypted key the PKCS#11 will be set as removed */
-        object = PK11_CreateGenericObject(slot, theTemplate, 3, PR_FALSE /* isPerm */);
-        if (!object) {  	
-            rv = PR_GetError();
-            PR_fprintf(PR_STDERR, 
-            		"%s: unable to create key object (%s)\n", 
-                    progName, SECU_Strerror(rv));
-        	break;
-        }
-        /* This will force the token to be seen as re-inserted */
-        (void) SECMOD_WaitForAnyTokenEvent(mod, 0, 0);
-        isPresent = PK11_IsPresent(slot);
-        assert(isPresent);
-
-        rv = PK11_Authenticate(slot, PR_TRUE, pwdata->data);
-        if (rv != SECSuccess) { 
-        	PR_fprintf(PR_STDERR, "Can't authenticate\n"); 
-            break;
-        }
-        
-        /* must find it again because "reinsertion" */
-        cert = PK11_FindCertFromNickname((char *)nickname, NULL);
-
-        /* Can we find the key? */
-        assert(cert);
-        privkey = PK11_FindPrivateKeyFromCert(slot, cert, pwdata->data);
-        if (!privkey) {
-        	rv = PR_GetError();
-        	PR_fprintf(PR_STDERR, "%s: unable to find the key for cert, (%s)\n", 
-                    progName, SECU_Strerror(rv));
-            GEN_BREAK(SECFailure);
-        }
-        rv = SECSuccess;
-  	
-    } while (0);
     
-    if (cert)
-    	CERT_DestroyCertificate(cert);
-    	
+    /* 
+     * Load the certificate first 
+    */
+    rv = loadCert(slot, cacert, certfile, nickname);
+    if (rv != SECSuccess) return rv;
+ 
+    /* 
+     * Load the private key next
+     */
+    rv = loadKey(slot, keyfile, nickname, pwdata);
+        	
     return rv;
 }
 
+/*
+ * Extract the public and private keys and the subject
+ * distinguished from the cert with the given nickname 
+ * in the given slot.
+ * 
+ * @param nickname the certificate nickname
+ * @param slot the slot where keys it was loaded
+ * @param pwdat password to authenication into slot
+ * @param privkey private key out
+ * @param pubkey public key out
+ * @param subject subject out
+ */
 static SECStatus extractRSAKeysAndSubject(
 	const char *nickname,
 	PK11SlotInfo *slot,
@@ -532,7 +454,7 @@ static SECStatus extractRSAKeysAndSubject(
 }
 
 /*
- * Modelled after the one in certutil
+ * Modeled after the one in certutil
  */
 static CERTCertificateRequest *
 GetCertRequest(PRFileDesc *inFile, PRBool ascii)
@@ -594,6 +516,9 @@ GetCertRequest(PRFileDesc *inFile, PRBool ascii)
     return certReq;
 }
 
+/*
+ * Modeled after the one in certutil
+ */
 static SECStatus
 CertReq(SECKEYPrivateKey *privk, SECKEYPublicKey *pubk, KeyType keyType,
         SECOidTag hashAlgTag, CERTName *subject, char *phone, int ascii, 
@@ -718,6 +643,9 @@ CertReq(SECKEYPrivateKey *privk, SECKEYPublicKey *pubk, KeyType keyType,
     return SECSuccess;
 }
 
+/*
+ * Modeled after the one in certutil
+ */
 static CERTCertificate *
 MakeV1Cert(CERTCertDBHandle *   handle, 
         CERTCertificateRequest *req,
@@ -769,6 +697,9 @@ MakeV1Cert(CERTCertDBHandle *   handle,
     return(cert);
 }
 
+/*
+ * Modelled after the one in certutil
+ */
 static SECItem *
 SignCert(CERTCertDBHandle *handle, CERTCertificate *cert, PRBool selfsign, 
          SECOidTag hashAlgTag,
@@ -847,6 +778,9 @@ done:
     return result;
 }
 
+/*
+ * Modelled after the one in certutil
+ */
 static SECStatus
 CreateCert(
     CERTCertDBHandle *handle, 
@@ -1413,6 +1347,7 @@ static int keyutil_main(
         const char       *key_pwd_file,
         const char       *cert_to_renew,
         const char       *input_key_file,
+        PRBool           cacert,
         const char       *subjectstr,
         int              keysize, 
         int              warpmonths,
@@ -1442,7 +1377,7 @@ static int keyutil_main(
          * This certificate request is for a renewal,
          * using existing keys.
          */
-    	CK_SLOT_ID slotID = 1;
+    	CK_SLOT_ID slotID = cacert ? 0 : 1;
     	char slotname[32];
     	char nickname[256];
     	CERTCertificate *keycert = NULL;
@@ -1464,7 +1399,7 @@ static int keyutil_main(
             goto shutdown;
         }
                
-        rv = loadCertAndKey(slot,
+        rv = loadCertAndKey(slot, cacert,
                             cert_to_renew, nickname, input_key_file, 
                             &pwdata);
 
@@ -1660,7 +1595,7 @@ shutdown:
     return rv == SECSuccess ? 0 : 255;
 }
 
-/* $Id: keyutil.c,v 1.5 2008/10/01 21:22:49 emaldonado Exp $ */
+/* $Id: keyutil.c,v 1.6 2008/10/11 19:45:12 emaldonado Exp $ */
 
 /* Key generation, encryption, and certificate utility code, based on
  * code from NSS's security utilities and the certutil application.  
@@ -1686,6 +1621,7 @@ int main(int argc, char **argv)
         { "output",     required_argument, NULL, 'o' }, /* reg, cert, enckey */
         { "keyout",     required_argument, NULL, 'k' }, /* plaintext key */
         { "ascii",      no_argument,       NULL, 'a' }, /* ascii */
+        { "cacert",     no_argument,       NULL, 't' }, /* ca cert to renew */
         { "help",       no_argument,       NULL, 'h' },
         { NULL }
     };
@@ -1703,15 +1639,19 @@ int main(int argc, char **argv)
     char *digestAlgorithm = "md5";
     char *keyoutfile = 0;
     PRBool ascii = PR_FALSE;
+    PRBool cacert = PR_FALSE;
     CERTCertDBHandle *certHandle = 0;
     SECStatus status = 0;
     CommandType cmd = cmd_CertReq;
     PRBool initialized = PR_FALSE;
       
-    while ((optc = getopt_long(argc, argv, "ac:rs:g:v:e:f:d:z:i:p:o:k:h", options, NULL)) != -1) {
+    while ((optc = getopt_long(argc, argv, "atc:rs:g:v:e:f:d:z:i:p:o:k:h", options, NULL)) != -1) {
         switch (optc) {
         case 'a':
             ascii = PR_TRUE;
+            break;
+        case 't':
+            cacert = PR_TRUE;
             break;
         case 'c':
             cmdstr = strdup(optarg);
@@ -1793,7 +1733,6 @@ int main(int argc, char **argv)
     }
     if (cert_to_renew) {
         char *configstring = NULL;
-    	//PK11_SetPasswordFunc(SECU_FilePasswd);    	
         /* Load our PKCS#11 module */
         configstring = (char *)malloc(4096);   
         PR_snprintf(configstring, 4096,
@@ -1819,14 +1758,14 @@ int main(int argc, char **argv)
         /* certfile NULL signals only the request is needed */
         rv = keyutil_main(certHandle,
                 noisefile, access_pwd_file, key_pwd_file,
-                cert_to_renew, keyfile, 
+                cert_to_renew, keyfile, cacert,
                 subject, keysize, warpmonths, validity_months,
                 ascii, outfile, NULL, keyoutfile);
         break;
     case cmd_CreateNewCert:
         rv = keyutil_main(certHandle,
                 noisefile, access_pwd_file, key_pwd_file,
-                NULL, NULL,
+                NULL, NULL, cacert, /* ignored */
                 subject, keysize, warpmonths, validity_months,
                 ascii, "tmprequest", outfile, keyoutfile);
         break;
