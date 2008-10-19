@@ -186,14 +186,6 @@ static int warning(FILE *out, const char *filename, const char *hostname,
         sprintf(subj, "will expire tomorrow");
     } else if (LL_CMP(prtimeDiff, <, warn_period)) {
         sprintf(subj, "will expire on %s", AsciiTime(end));
-        {
-            int days; /* days till expiry */
-            LL_L2I(days, prtimeDiff);
-            days = (days) / (3600 * 24);
-            assert(0 < days);
-            assert(days < warn_period);
-            sprintf(subj, "will expire in %d days", days);
-        }
     } else {
         return 0; /* nothing to warn about. */
     }
