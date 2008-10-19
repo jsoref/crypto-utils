@@ -36,7 +36,7 @@
         <arg><option>--makeca</option></arg>
         <arg><option>--nss</option></arg>
         <arg><option>--renew</option></arg>
-        <arg><option>--isca</option></arg>
+        <arg><option>--cacert</option></arg>
       </group>
       <arg choice="req"><replaceable>hostname</replaceable></arg>
     </cmdsynopsis>
@@ -96,8 +96,8 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>--isca</option></term>
-        <listitem><simpara>The certificate renewal is for a CA.</simpara></listitem>
+        <term><option>--cacert</option></term>
+        <listitem><simpara>The certificate renewal is for a CA, needed for openssl certs only.</simpara></listitem>
       </varlistentry>
 
       <varlistentry>
