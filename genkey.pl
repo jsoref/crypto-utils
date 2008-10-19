@@ -74,7 +74,7 @@ Usage: genkey [options] servername
     --makeca Generate a self-signed certificate for a CA
     --days   Days until expiry of self-signed certificate (default 30)
     --renew  CSR is for cert renewal, reusing existing key pair, openssl certs only
-    --isca   Renewal is for a CA certificate
+    --cacert Renewal is for a CA certificate, needed for openssl certs only
     --nss    Use the nss database for keys and certificates
 EOH
     exit 1;
@@ -124,7 +124,7 @@ my $ca_mode = '';
 my $cert_days = 30;
 my $nss ='';
 my $renew = '';
-my $isca = '';
+my $cacert = '';
 my $modNssDbDir = '';
 my $nssNickname = '';
 my $nssDBPrefix = '';
@@ -132,7 +132,7 @@ GetOptions('test|t' => \$test_mode,
            'genreq' => \$genreq_mode,
            'days=i' => \$cert_days,
 	       'renew'  => \$renew,
-           'isca'   => \$isca,
+	       'cacert' => \$cacert,
            'nss|n'  => \$nss,
 	       'makeca' => \$ca_mode) or usage();
 usage() unless @ARGV != 0;
@@ -1124,7 +1124,7 @@ sub renewCertNSS
 sub renewCertOpenSSL
 {
     my ($csrfile, # output
-        $certfile,$keyfile,$days) = @_;
+        $certfile,$keyfile,$cacert,$days) = @_;
 
     use integer;
     my $months = $days ? $days / 30 : 24;
@@ -1135,6 +1135,7 @@ sub renewCertOpenSSL
     my $args = "--command genreq ";
     $args   .= "--renew $certfile "; 
     $args   .= "--input $keyfile "; 
+    $args   .= "--cacert " if $cacert;
     $args   .= "--validity $months "; 
     $args   .= "--out $csrfile ";
  
@@ -1362,10 +1363,9 @@ sub renewCert
             $csrfile,
             $certfile, # contains cert to renew
             $keyfile,  # contains encrypted private key
+            $cacert,
             $days);
 
-    	## FIXME don't harcode password - keypwdfile and I
-    	## though it was the p12 file pwd
     }
 }
 
