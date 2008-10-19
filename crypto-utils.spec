@@ -3,8 +3,8 @@
 
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
-Version: 2.4
-Release: 2
+Version: 2.4.1
+Release: 1
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
