@@ -29,7 +29,7 @@ License: MIT and GPLv2+
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: nss-devel, pkgconfig, newt-devel, xmlto
 BuildRequires: perl-devel, perl(Newt), perl(ExtUtils::MakeMaker)
-Requires: perl(Newt), nss >= 3.11.99
+Requires: perl(Newt), nss >= 3.12.1
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Obsoletes: crypto-rand
 
