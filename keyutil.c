@@ -181,24 +181,45 @@ CK_SLOT_ID slotID = 1;
 
 char *progName;
 
+static const struct option options[] = {
+    { "command",    required_argument, NULL, 'c' },
+    { "renew",      required_argument, NULL, 'r' },
+    { "subject",    required_argument, NULL, 's' },
+    { "gkeysize",   required_argument, NULL, 'g' },
+    { "validity",   required_argument, NULL, 'v' },
+    { "encpwdfile", required_argument, NULL, 'e' },
+    { "filepwdnss", required_argument, NULL, 'f' },
+    { "digest",     required_argument, NULL, 'd' },
+    { "znoisefile", required_argument, NULL, 'z' },
+    { "input",      required_argument, NULL, 'i' }, /* key in */
+    { "passout",    required_argument, NULL, 'p' },
+    { "output",     required_argument, NULL, 'o' }, /* reg, cert, enckey */
+    { "keyout",     required_argument, NULL, 'k' }, /* plaintext key */
+    { "ascii",      no_argument,       NULL, 'a' }, /* ascii */
+    { "cacert",     no_argument,       NULL, 't' }, /* ca cert renewal */
+    { "help",       no_argument,       NULL, 'h' },
+    { NULL }
+};
+
 static void 
 Usage(char *progName)
 {
     fprintf(stderr, "Usage: %s [options] arguments\n", progName);
-    fprintf(stderr, "-h print this help message");
-    fprintf(stderr, "-c command, one of [genreq|makecert]");
-    fprintf(stderr, "-r the cert to renew");
-    fprintf(stderr, "-s subject subject distinguished name");
-    fprintf(stderr, "-g keysize in bits");
-    fprintf(stderr, "-v validity in months");
-    fprintf(stderr, "-z noise file");
-    fprintf(stderr, "-f key encryption password file");
-    fprintf(stderr, "-f module access password file");
-    fprintf(stderr, "-d digest algorithm");
-    fprintf(stderr, "-i input (key to encrypt or to sign a request with)");
-    fprintf(stderr, "-k key out, when csr or cert generation");
-    fprintf(stderr, "-o output (a csr or cert)");
-    fprintf(stderr, "-p passout, the pbe password");
+    fprintf(stderr, "{-c|--command} command, one of [genreq|makecert]");
+    fprintf(stderr, "{-r|--renew} cert-to-renew     the file with thecertifificast to renew");
+    fprintf(stderr, "{-s|--subject} subject         subject distinguished name");
+    fprintf(stderr, "{-g|--gsize} key_size          size in bitsof the rsa key to generate");
+    fprintf(stderr, "{-v|--validity} months         cert validity in months");
+    fprintf(stderr, "{-z|--znoisefile} noisefile    seed file for use in key gneration");
+    fprintf(stderr, "{-f|--filepwdnss} pwdfile      file with the key encryption_password");
+    fprintf(stderr, "{-f|--filepwdnss} modpwdfile   file with the module access_password");
+    fprintf(stderr, "{-d|--digest} digest-algorithm digest algorithm");
+    fprintf(stderr, "{-i|--input} inputkey-file     file with key with which to encrypt or to sign a request");
+    fprintf(stderr, "{-p|--passout} pbe-password    the password for encrypting of the key");
+    fprintf(stderr, "{-o|--output} out-file         output file for a csr or cert");
+    fprintf(stderr, "{-k|--keyfile} out-key-file    output key file, with csr or certgen");
+    fprintf(stderr, "{-t|--cacert}                  indicates that cert renewal is for a ca");
+    fprintf(stderr, "{-h|--help}                    print this help message");
     fprintf(stderr, "\n");
     exit(1);
 }
@@ -1595,7 +1616,7 @@ shutdown:
     return rv == SECSuccess ? 0 : 255;
 }
 
-/* $Id: keyutil.c,v 1.6 2008/10/11 19:45:12 emaldonado Exp $ */
+/* $Id: keyutil.c,v 1.7 2008/10/19 05:08:53 emaldonado Exp $ */
 
 /* Key generation, encryption, and certificate utility code, based on
  * code from NSS's security utilities and the certutil application.  
@@ -1606,25 +1627,6 @@ shutdown:
 int main(int argc, char **argv)
 {
     int optc, rv = 0;
-    static const struct option options[] = {
-        { "command",    required_argument, NULL, 'c' },
-        { "renew",      required_argument, NULL, 'r' },
-        { "subject",    required_argument, NULL, 's' },
-        { "gkeysize",   required_argument, NULL, 'g' },
-        { "validity",   required_argument, NULL, 'v' },
-        { "encpwdfile", required_argument, NULL, 'e' },
-        { "filepwdnss", required_argument, NULL, 'f' },
-        { "digest",     required_argument, NULL, 'd' },
-        { "znoisefile", required_argument, NULL, 'z' },
-        { "input",      required_argument, NULL, 'i' }, /* key in */
-        { "passout",    required_argument, NULL, 'p' },
-        { "output",     required_argument, NULL, 'o' }, /* reg, cert, enckey */
-        { "keyout",     required_argument, NULL, 'k' }, /* plaintext key */
-        { "ascii",      no_argument,       NULL, 'a' }, /* ascii */
-        { "cacert",     no_argument,       NULL, 't' }, /* ca cert to renew */
-        { "help",       no_argument,       NULL, 'h' },
-        { NULL }
-    };
     char *cmdstr = NULL;
     char *noisefile = NULL;
     int  keysize = 1024;
