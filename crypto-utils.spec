@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 1
+Release: 2
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -29,7 +29,7 @@ License: MIT and GPLv2+
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: nss-devel, pkgconfig, newt-devel, xmlto
 BuildRequires: perl-devel, perl(Newt), perl(ExtUtils::MakeMaker)
-Requires: perl(Newt), nss >= 3.12.1
+Requires: perl(Newt), nss >= 3.12.2
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Obsoletes: crypto-rand
 
@@ -131,6 +131,12 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Sun Oct 26 2008 Elio Maldonado <emaldona@redhat.com> - 2.4.1-2
+- enabled renewal for certs in the nss database
+- disabled renewal for certs in pem files
+- added man page examples
+- requires nss 3.12.2 or higher
+
 * Tue Jun 03 2008 Elio Maldonado <emaldona@redhat.com> - 2.4-2
 - removed unneeded declaration in pemutil
 
