@@ -46,6 +46,10 @@ test-genkey: genkey
 	mkdir -p certs private
 	./genkey --test `hostname`
 
+test-genkey-nss: genkey
+	mkdir -p certs private
+	./genkey --test --nss nsstest.`hostname`
+
 #########################################################################
 # Individual testing targets.
 #########################################################################
