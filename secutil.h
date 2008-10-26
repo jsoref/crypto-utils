@@ -86,7 +86,7 @@ typedef struct {
 
 extern char *SECU_FilePasswd(PK11SlotInfo *slot, PRBool retry, void *arg);
 extern char *SECU_NoPassword(PK11SlotInfo *slot, PRBool retry, void *arg);
-
+extern char *SECU_GetModulePassword(PK11SlotInfo *slot, PRBool retry, void *arg);
 
 /* print out an error message */
 extern void SECU_PrintError(char *progName, char *msg, ...);
