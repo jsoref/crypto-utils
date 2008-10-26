@@ -92,7 +92,9 @@
       <varlistentry>
         <term><option>--renew</option></term>
         <listitem><simpara>Used with --genreq to indicate a renewal,
-        the existing keypair will be used.</simpara></listitem>
+        the existing keypair will be used. Certs and keys must reside
+         in the nss database. Pem file cert renewal is not currently
+         supported.</simpara></listitem>
       </varlistentry>
 
       <varlistentry>
@@ -128,6 +130,37 @@
       </programlisting>
 
     </para>
+
+    <para>The following example will create a self-signed certificate
+    and private key for the hostname <literal>www.nssexample.com</literal>
+    which will be stored in cert and key in the nss database:
+    
+      <programlisting>
+        # genkey --days --nss 120 www.nssexample.com
+      </programlisting>
+
+    </para>
+
+    <para>The following example will generate a certificate signing
+     request for a new mod_nss style cert specified by its nickname, 
+    <literal>Server-Cert</literal>:
+    
+      <programlisting>
+        # genkey --genreq --nss --days 120 Server-Cert
+      </programlisting>
+
+    </para>
+
+    <para>The following example will generate a certificate signing request
+    for the renewal of an existing mod_nss cert specified by its nickname, 
+    <literal>Server-Cert</literal>:
+    
+      <programlisting>
+        # genkey --genreq --renew --nss --days 120 Server-Cert
+      </programlisting>
+
+    </para>
+   
   </refsect1>    
 
   <refsect1>
