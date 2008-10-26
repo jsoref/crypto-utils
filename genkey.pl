@@ -76,6 +76,7 @@ Usage: genkey [options] servername
     --renew  CSR is for cert renewal, reusing existing key pair, openssl certs only
     --cacert Renewal is for a CA certificate, needed for openssl certs only
     --nss    Use the nss database for keys and certificates
+    --gdb    For package maintainers, to trace into the nss utilities
 EOH
     exit 1;
 }
@@ -128,13 +129,15 @@ my $cacert = '';
 my $modNssDbDir = '';
 my $nssNickname = '';
 my $nssDBPrefix = '';
+my $gdb = '';
 GetOptions('test|t' => \$test_mode, 
            'genreq' => \$genreq_mode,
            'days=i' => \$cert_days,
-	       'renew'  => \$renew,
-	       'cacert' => \$cacert,
+           'renew'  => \$renew,
+           'cacert' => \$cacert,
            'nss|n'  => \$nss,
-	       'makeca' => \$ca_mode) or usage();
+           'gdb'    => \$gdb,
+           'makeca' => \$ca_mode) or usage();
 usage() unless @ARGV != 0;
 $skip_random = $test_mode;
 $overwrite_key = $test_mode;
@@ -901,10 +904,12 @@ sub nssUtilCmd {
     Newt::Suspend();
     print STDOUT "$cmd $args"."\n";
     $! = '';
-    system("$cmd $args");
-    # change to system("gdb $cmd");
-    # to break into the debugger
-    print STDERR "$cmd returned $!"."\n" if $!;
+    if ($gdb) {
+        system("gdb $cmd");
+    } else {
+        system("$cmd $args");
+        print STDERR "$cmd returned $!"."\n" if $!;
+    }
     Newt::Resume();
 }
 
@@ -1006,7 +1011,7 @@ sub makeCertOpenSSL
     $args   .= "-z $noisefile " if $noisefile;
     $args   .= "-e $pwdfile "   if $pwdfile; 
               # there is no password when the
-              # user wants the key in the clar
+              # user wants the key in the clear
     $args   .= "-o $certfile ";
     $args   .= "-k $keyfile";
 
@@ -1136,6 +1141,7 @@ sub renewCertOpenSSL
     $args   .= "--renew $certfile "; 
     $args   .= "--input $keyfile "; 
     $args   .= "--cacert " if $cacert;
+    $args   .= "--filepwdnss $pwdfile " if $pwdfile;    
     $args   .= "--validity $months "; 
     $args   .= "--out $csrfile ";
  
@@ -1341,31 +1347,19 @@ sub renewCert
 
     if ($nss) {
         # Renew cert in the nss database
-        #
-        # Must wait until NSS 3.12.2 becomes available with the fix for
-        # https://bugzilla.redhat.com/show_bug.cgi?id=346731
-        # <<certutil -R for cert renewal should derive the subject 
-        #  from the cert if none is specified>>
-        #  
-        # renewCertNSS($csrfile, $modNssDbDir, $nssDBPrefix, $nssNickname, $days, $tmpPasswordFile);
-	    #
-        # Until then bail out.
-        #
+        renewCertNSS($csrfile, $modNssDbDir, $nssDBPrefix, 
+                     $nssNickname, $days, $tmpPasswordFile);
+    } else {
+        # Disabling renewal of certs in PEM files until a future relase
         Newt::newtWinMessage("Error", "Close", 
-                 "Certificate renewal with NSS database not yet supported:".
-                 "\n\nPress return to exit");
-        Newt::Finished();
-        exit 1; 
-          
-    } else {	
-        # Renew cert in a PEM file
-        renewCertOpenSSL(
-            $csrfile,
-            $certfile, # contains cert to renew
-            $keyfile,  # contains encrypted private key
-            $cacert,
-            $days);
+            "Certificate renewal from PEM files is not yet supported:".
+             "\n\nPress return to exit");
+          Newt::Finished();
+          exit 1;
 
+        # Enable this when ready	
+        # Renew cert in a PEM file
+        #renewCertOpenSSL($csrfile, $certfile, $keyfile, $cacert, $days);
     }
 }
 
