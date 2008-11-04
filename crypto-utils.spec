@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 2
+Release: 3
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -131,6 +131,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Mon Nov 03 2008 Elio Maldonado <emaldona@redhat.com> - 2.4.1-3
+- preauthenticate to modules using specially formatted password file
+
 * Sun Oct 26 2008 Elio Maldonado <emaldona@redhat.com> - 2.4.1-2
 - enabled renewal for certs in the nss database
 - disabled renewal for certs in pem files
