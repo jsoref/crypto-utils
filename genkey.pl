@@ -140,7 +140,7 @@ GetOptions('test|t' => \$test_mode,
            'makeca' => \$ca_mode) or usage();
 usage() unless @ARGV != 0;
 
-if $genreq_mode && $renew && !$nss) {
+if ($genreq_mode && $renew && !$nss) {
 print STDERR <<EOH;
 Certificate renewal from PEM files is not yet supported.
 EOH
