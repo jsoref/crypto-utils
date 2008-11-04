@@ -84,6 +84,14 @@ prepare-tests:
 cleanup-tests: certs private
 	rm -f -r certs private
 
+# get some random seed in a file
+# enables testing with keyutil directly
+# without user interaction.
+seed-file:
+	echo "Saving random seed..."
+	touch random-seed
+	dd if=/dev/urandom of=random-seed count=1 bs=4096	
+
 #########################################################################
 	
 date.xml:
