@@ -139,10 +139,18 @@ GetOptions('test|t' => \$test_mode,
            'gdb'    => \$gdb,
            'makeca' => \$ca_mode) or usage();
 usage() unless @ARGV != 0;
+
+if $genreq_mode && $renew && !$nss) {
+print STDERR <<EOH;
+Certificate renewal from PEM files is not yet supported.
+EOH
+}
+
 $skip_random = $test_mode;
 $overwrite_key = $test_mode;
 $servername = $ARGV[0];
 $randfile = $ssltop."/.rand.".$$;
+$keyEncPassword = '';  # for the one we write
 $tmpPasswordFile = ''; # none has been created yet
 $keyfile = $ssltop."/private/".$servername.".key";
 if ($ca_mode) {
@@ -176,7 +184,7 @@ if ($nss) {
     }
     
     $modNssDbDir = getModNSSDatabase();
-    $nssNickname = getNSSNickname();
+    $nssNickname = $servername ? $servername : getNSSNickname();
     $nssDBPrefix = getNSSDBPrefix();
 }
 
@@ -699,32 +707,57 @@ sub wantCAWindow
 sub savePassword 
 {
     my ($passwd) = @_;
-
-    $tmpPasswordFile = ".passwordfile.".$$;
-
-    if (!open (SESAME, ">$tmpPasswordFile")) {
-        Newt::newtWinMessage("Error", "Close",
+    #
+    # Write password to a file with lines formatted as:
+    # NSS Certificate DB:access_passphrase
+    # PEM Token #0:ca_key_access_passphrase
+    # PEM Token #1:server_key_access_passphrase
+    #
+    my $passwordLine = $nss
+        ? "NSS Certificate DB" : $cacert ? "PEM Token #0:" : "PEM Token #1:";
+    $passwordLine .= "$passwd\n";
+    if ($tmpPasswordFile) {
+        # append to existing file
+        if (!open(SESAME, ">>$tmpPasswordFile")) {
+            Newt::newtWinMessage("Error", "Close",
+                "Unable to append passphrase to $tmpPasswordFile".
+			    "\n\nPress return to continue");
+	        return "Back";
+        }
+    } else {
+        # write to a new file
+        $tmpPasswordFile = ".passwordfile.".$$;
+        if (!open (SESAME, ">$tmpPasswordFile")) {
+            Newt::newtWinMessage("Error", "Close",
                 "Unable to save passphrase to $tmpPasswordFile".
 			    "\n\nPress return to continue");
-		$tmpPasswordFile = ''; # mark it as never created
-	    return "Back";
+		    $tmpPasswordFile = ''; # mark it as never created
+	        return "Back";
+        }
     }
-    print SESAME $passwd;
+    print SESAME $passwordLine;
     close(SESAME);
     # This file will be deleted on program exit.
 
     return "Next";
 }
 
+# Prompts for a module or key access password.
+# The argument indicates wheter the password is to
+# access the nss module access or for access to the key
+# to be loaded from a pem file into a PEM module token.
 sub moduleAccesPasswordWindow
-{	
+{
+    my ($what) = @_;
+    # either "module" or "key"
+
     my $message = <<EOT;
-At this stage you can provide the module acess passphrase.
+At this stage you can provide the $what acess passphrase.
 EOT
-    $panel = Newt::Panel(1, 3, "Module access");
+    $panel = Newt::Panel(1, 3, $what." access");
     $panel->Add(0, 0, Newt::Textbox(70, 5, 0, $message));
 
-    my $checkbox = Newt::Checkbox("Module access password if any");
+    my $checkbox = Newt::Checkbox($what." access password if any");
     $panel->Add(0, 1, $checkbox);
     $panel->Add(0, 2, NextBackCancelButton());
 
@@ -738,10 +771,10 @@ EOT
 
     return $ret if ($ret eq "Back" or $ret eq "Cancel" or $plain == 1);
  
-    $panel = Newt::Panel(1, 3, "Enter the module passphrase");
+    $panel = Newt::Panel(1, 3, "Enter the $what passphrase");
 
     $message = <<EOT;
-This is the passphrase to your module.
+This is the passphrase to your $what.
 EOT
     $panel->Add(0, 0, Newt::Textbox(70, 5, 0, $message));
     $subp = Newt::Panel(2,2);
@@ -788,8 +821,10 @@ EOT
 # module acces password instead.
 sub passwordWindow
 {
-    return moduleAccesPasswordWindow() if $nss;
-    return "Next" if $renew;
+    if ($nss || $renew) {
+        # nss module access password or key password
+        return moduleAccesPasswordWindow($nss ? "module" : "key");
+    }
 	
     my $message = <<EOT;
 At this stage you can set the passphrase on your private key. If you
@@ -884,9 +919,7 @@ EOT
 
     return $ret if ($ret eq "Back" or $ret eq "Cancel");
 
-    # Save it to a temporary file to supply to the nss utilities,
-    # the file will be erased upon exit
-    savePassword($pass1);
+    $keyEncPassword = $pass1;
 
     return "Next";
 }
@@ -941,13 +974,13 @@ sub makeCertNSS
     $args .= "-z $noisefile " if $noisefile;
     $args .= "-d $modNssDbDir "; 
     $args .= "-p $nssDBPrefix " if $nssDBPrefix;
-    $args .= "-o $certfile ";
+    $args .= "-o $certfile " if $certfile;
     
     nssUtilCmd("$bindir/certutil", $args);
 
     unlink($noisefile);
     
-    if (!-f $certfile) {
+    if ($certfile && !-f $certfile) {
         Newt::newtWinMessage("Error", "Close", 
 			     "Was not able to create a certificate for this ".
 			     "host:\n\nPress return to exit");
@@ -1009,7 +1042,7 @@ sub makeCertOpenSSL
     $args   .= "-v $months "; 
     $args   .= "-a ";              ## using ascii 
     $args   .= "-z $noisefile " if $noisefile;
-    $args   .= "-e $pwdfile "   if $pwdfile; 
+    $args   .= "-e $keyEncPassword " if $keyEncPassword; 
               # there is no password when the
               # user wants the key in the clear
     $args   .= "-o $certfile ";
@@ -1056,7 +1089,7 @@ sub genRequestOpenSSL
     $args   .= "-v $months "; 
     $args   .= "-o $csrfile ";
     $args   .= "-k $keyfile "; 
-    $args   .= "-e $pwdfile " if $pwdfile;
+    $args   .= "-e $keyEncPassword " if $keyEncPassword;
               # there is no password when the
               # user wants the key in the clear
     $args   .= "-z $noisefile "  if $noisefile;
@@ -1090,11 +1123,6 @@ sub genRequestOpenSSL
 }
 
 # Renew a certificate which is stored in the nss database
-# Do not call this routine yet as certutil does not support
-# certificate renewal in a convenient way for scripts. We must
-# wait until NSS 3.12.2 becomes available with the fix for
-# https://bugzilla.redhat.com/show_bug.cgi?id=346731
-# for this routine to work
 sub renewCertNSS
 {
     my ($csrfile, $dbdir, $dbprefix, $nickname, $days, $pwdfile) = @_;
@@ -1350,16 +1378,8 @@ sub renewCert
         renewCertNSS($csrfile, $modNssDbDir, $nssDBPrefix, 
                      $nssNickname, $days, $tmpPasswordFile);
     } else {
-        # Disabling renewal of certs in PEM files until a future relase
-        Newt::newtWinMessage("Error", "Close", 
-            "Certificate renewal from PEM files is not yet supported:".
-             "\n\nPress return to exit");
-          Newt::Finished();
-          exit 1;
-
-        # Enable this when ready	
         # Renew cert in a PEM file
-        #renewCertOpenSSL($csrfile, $certfile, $keyfile, $cacert, $days);
+        renewCertOpenSSL($csrfile, $certfile, $keyfile, $cacert, $days);
     }
 }
 
@@ -1415,6 +1435,9 @@ sub genReqWindow
 	$csrtext .= $_;
     }
     close(CSR);
+
+    # Fixme: Disabling csr display, not recognized as PEM base 64 encoded
+    $csrtext = "" if $renew && !$nss;
 
     Newt::Suspend();
     
@@ -1539,7 +1562,7 @@ sub genCACertWindow
     return $ret unless ($ret eq "Next");
 
     if ($nss) {
-        makeCertNSS($certfile,$subject,730,$nssNickname,
+        makeCertNSS('',$subject,730,$nssNickname,
                     $randfile,$tmpPasswordFile);
     } else {
         makeCertOpenSSL($keyfile,$certfile,$subject,730,
