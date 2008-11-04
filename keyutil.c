@@ -1631,7 +1631,7 @@ shutdown:
     return rv == SECSuccess ? 0 : 255;
 }
 
-/* $Id: keyutil.c,v 1.10 2008/10/26 23:50:45 emaldonado Exp $ */
+/* $Id: keyutil.c,v 1.11 2008/11/04 04:07:28 emaldonado Exp $ */
 
 /* Key generation, encryption, and certificate utility code, based on
  * code from NSS's security utilities and the certutil application.  
@@ -1701,7 +1701,7 @@ int main(int argc, char **argv)
             printf("valid for %d months\n", validity_months);
             break;
         case 'e':
-            keyPassword = strdup(optarg);
+            keyEncPwd = strdup(optarg);
             printf("key encryption password = ****\n");
             break;
         case 'f':
