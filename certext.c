@@ -367,8 +367,7 @@ GetGeneralName (PRArenaPool *arena)
             break;
         }
 
-        case certDirectoryName: 
-            {
+        case certDirectoryName: {
                 CERTName *directoryName = NULL;
                 
                 directoryName = CERT_AsciiToName (buffer);
