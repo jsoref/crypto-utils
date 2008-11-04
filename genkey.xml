@@ -78,7 +78,7 @@
       <varlistentry>
         <term><option>--makeca</option></term>
         <listitem><simpara>Generate a Certificate Authority
-        keypair.</simpara></listitem>
+        keypair and certificate.</simpara></listitem>
       </varlistentry>
 
       <varlistentry>
@@ -93,8 +93,8 @@
         <term><option>--renew</option></term>
         <listitem><simpara>Used with --genreq to indicate a renewal,
         the existing keypair will be used. Certs and keys must reside
-         in the nss database. Pem file cert renewal is not currently
-         supported.</simpara></listitem>
+        in the nss database, therefore --nss is also required. Pem file
+        based cert renewal is not currently supported.</simpara></listitem>
       </varlistentry>
 
       <varlistentry>
@@ -133,7 +133,8 @@
 
     <para>The following example will create a self-signed certificate
     and private key for the hostname <literal>www.nssexample.com</literal>
-    which will be stored in cert and key in the nss database:
+    which will be stored in cert and key in the nss database. If no nickname
+    is given the tool will extract it from mod_nss's nss configuration file.
     
       <programlisting>
         # genkey --days --nss 120 www.nssexample.com
