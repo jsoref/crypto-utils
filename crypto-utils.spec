@@ -131,6 +131,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Wed Dec 24 2008 Elio Maldonado <emaldona@redhat.com> - 2.4.1-4
+- Fix certwatch time calculations for expiring certificates (#473860)
+
 * Mon Nov 03 2008 Elio Maldonado <emaldona@redhat.com> - 2.4.1-3
 - preauthenticate to modules using specially formatted password file
 
