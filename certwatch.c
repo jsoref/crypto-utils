@@ -191,7 +191,7 @@ static int warning(FILE *out, const char *filename, const char *hostname,
                    PRTime start, PRTime end, PRTime now, int quiet)
 {
     /* Note that filename can be the cert nickname. */
-    int renew = 1, int days;         /* days till expiry */
+    int renew = 1, days;         /* days till expiry */
     char subj[50];
 
     switch (validity) {
