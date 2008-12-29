@@ -149,8 +149,7 @@ char *pr_ctime(PRTime time, char *buf, int size)
     return buf;
 }
 
-
-/* A year is leap iff is divisible by 4 but not by 100 or is divisible by 400 */
+/* A leap year is divisible by 4 but not by 100 or divisible by 400 */
 static int leap_year(int year) {
     return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0) ? 1 : 0;
 }
@@ -165,21 +164,21 @@ static int diff_time_days(PRTime aT, PRTime bT)
     LL_I2L(one, 1);
 
     do {
-	PR_ExplodeTime(aT, PR_GMTParameters, &a);
-	PR_ExplodeTime(bT, PR_GMTParameters, &b);
+        PR_ExplodeTime(aT, PR_GMTParameters, &a);
+        PR_ExplodeTime(bT, PR_GMTParameters, &b);
 
-	years = a.tm_year - b.tm_year;
-	if (years < 0) break;
+        years = a.tm_year - b.tm_year;
+        if (years < 0)
+            break;
 
-	if (years == 0) {
+	    if (years == 0) {
             days += (a.tm_yday - b.tm_yday);
-	} else if (a.tm_year == b.tm_year + 1) {
+	    } else if (a.tm_year == b.tm_year + 1) {
             days += (365 + leap_year(b.tm_year) - b.tm_yday + a.tm_yday);
-	} else {
+	    } else {
             LL_SUB(am1, aT, one);
             aT = am1;
-	}
-
+	    }
     } while (0);
 
     return days;
@@ -192,7 +191,7 @@ static int warning(FILE *out, const char *filename, const char *hostname,
                    PRTime start, PRTime end, PRTime now, int quiet)
 {
     /* Note that filename can be the cert nickname. */
-    int renew = 1;
+    int renew = 1, int days;         /* days till expiry */
     char subj[50];
 
     switch (validity) {
@@ -204,20 +203,17 @@ static int warning(FILE *out, const char *filename, const char *hostname,
         sprintf(subj, "has expired");
         break;
     case secCertTimeValid:
-        {
-            /* days till expiry */
-            int days = diff_time_days(end, now);
-            if (days == 0) {
-                strcpy(subj, "will expire today");
-            } else if (days == 1) {
-                sprintf(subj, "will expire tomorrow");
-            } else if (days < warn_period) {
-                sprintf(subj, "will expire in %d days", days);
-            } else {
-                return 0; /* nothing to warn about. */
-            }
-	}
-	break;
+        days = diff_time_days(end, now);
+        if (days == 0) {
+            strcpy(subj, "will expire today");
+        } else if (days == 1) {
+            sprintf(subj, "will expire tomorrow");
+        } else if (days < warn_period) {
+            sprintf(subj, "will expire in %d days", days);
+        } else {
+            return 0; /* nothing to warn about. */
+        }
+        break;
     case secCertTimeUndetermined:
     default:
         /* it will never get here if caller checks validity */
@@ -338,7 +334,8 @@ cleanup:
 int main(int argc, char **argv)
 {
     int optc, quiet = 0;
-    static const struct option options[] = {
+    const char *shortopts = "qp:a:d:w:c:k:";
+    static const struct option longopts[] = {
         { "quiet", no_argument, NULL, 'q' },
         { "period", required_argument, NULL, 'p' },
         { "address", required_argument, NULL, 'a' },
@@ -348,10 +345,8 @@ int main(int argc, char **argv)
         { "keydbprexix", required_argument, NULL, 'k' },
         { NULL }
     };
-    const char *opts = "qp:a:d:w:c:k:";
     char *certDBPrefix = "";
     char *keyDBPrefix = "";
-
     char *configdir = NULL;    /* contains the cert database */
     char *passwordfile = NULL; /* module password file */
     int byNickname = 0;        /* whether to search by nickname */
@@ -360,7 +355,7 @@ int main(int argc, char **argv)
      * mktime() back to UTC: */
     tzset();
 
-    while ((optc = getopt_long(argc, argv, opts, options, NULL)) != -1) {
+    while ((optc = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
         switch (optc) {
         case 'q':
             quiet = 1;
