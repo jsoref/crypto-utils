@@ -614,7 +614,7 @@ sub welcomeWindow()
     my $where_key = $nss
         ? $modNssDbDir."/$nssDBPrefix"."key3.db" : "$ssltop/private/$name.key";
     my $where_cert = $nss
-        ? $modNssDbDir."/$nssDBPrefix"."cert8.db" : "$ssltop/certs/$name.cert";
+        ? $modNssDbDir."/$nssDBPrefix"."cert8.db" : "$ssltop/certs/$name.crt";
     my $what = $nss ? "directory" : "file";
     my $message = <<EOT;
 You are now generating a new keypair which will be used to encrypt all
