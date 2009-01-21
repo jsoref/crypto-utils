@@ -149,39 +149,11 @@ char *pr_ctime(PRTime time, char *buf, int size)
     return buf;
 }
 
-/* A leap year is divisible by 4 but not by 100 or divisible by 400 */
-static int leap_year(int year) {
-    return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0) ? 1 : 0;
-}
-
 /* Computes the day difference among two PRTime's */
 static int diff_time_days(PRTime aT, PRTime bT)
 {
-    PRTime am1, one;
-    PRExplodedTime a, b;
-    int years, days = 0;
-
-    LL_I2L(one, 1);
-
-    do {
-        PR_ExplodeTime(aT, PR_GMTParameters, &a);
-        PR_ExplodeTime(bT, PR_GMTParameters, &b);
-
-        years = a.tm_year - b.tm_year;
-        if (years < 0)
-            break;
-
-	    if (years == 0) {
-            days += (a.tm_yday - b.tm_yday);
-	    } else if (a.tm_year == b.tm_year + 1) {
-            days += (365 + leap_year(b.tm_year) - b.tm_yday + a.tm_yday);
-	    } else {
-            LL_SUB(am1, aT, one);
-            aT = am1;
-	    }
-    } while (0);
-
-    return days;
+    PRInt64 secs = (aT - bT) / PR_USEC_PER_SEC;
+    return secs / 86400L;
 }
 
 /* Print a warning message that the certificate in 'filename', issued
