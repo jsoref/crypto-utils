@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 7
+Release: 8
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -131,6 +131,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Wed Jan 21 2009 Elio Maldonado <emaldona@redhat.com> - 2.4.1-8
+- certwatch: Fixed cert expiry time warnings off by one error (#473860)
+
 * Wed Jan 21 2009 Elio Maldonado <emaldona@redhat.com> - 2.4.1-7
 - certwatch: Fixed cert expiry time warnings (#473860)
 
