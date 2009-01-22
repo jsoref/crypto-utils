@@ -152,7 +152,7 @@ char *pr_ctime(PRTime time, char *buf, int size)
 /* Computes the day difference among two PRTime's */
 static int diff_time_days(PRTime aT, PRTime bT)
 {
-    PRInt64 secs = (aT - bT) / PR_USEC_PER_SEC;
+    PRInt64 secs = (aT/PR_USEC_PER_SEC - bT/PR_USEC_PER_SEC);
     return secs / 86400L;
 }
 
