@@ -154,7 +154,7 @@ $keyEncPassword = '';  # for the one we write
 $tmpPasswordFile = ''; # none has been created yet
 $keyfile = $ssltop."/private/".$servername.".key";
 if ($ca_mode) {
-    $keyfile = $cadir."/private/".$servername."."key";
+    $keyfile = $cadir."/private/".$servername.".key";
 }
 
 ### State variables
