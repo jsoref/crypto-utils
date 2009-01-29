@@ -204,6 +204,8 @@ static const struct option options[] = {
     { NULL }
 };
 
+static certutilExtnList keyutil_extns;
+
 static void 
 Usage(char *progName)
 {
@@ -1388,8 +1390,6 @@ static int keyutil_main(
         const char       *certfile,
         const char       *keyoutfile)
 {
-    static certutilExtnList nullextnlist = {PR_FALSE};
-    
     CERTCertificate *cert       = NULL;
     PRFileDesc *outFile         = NULL;
     PRFileDesc *keyOutFile      = NULL;
@@ -1479,6 +1479,12 @@ static int keyutil_main(
             rv = 255;
             goto shutdown;
         }
+
+        if (!subjectstr) {
+            SECU_PrintError(progName, "subject string was NULL\n");
+            rv = 255;
+            goto shutdown;
+        }
         subject = CERT_AsciiToName((char *)subjectstr);
         if (!subject) {
             SECU_PrintError(progName,
@@ -1501,7 +1507,22 @@ static int keyutil_main(
     /*
      *  Certificate request
      */
-    
+
+    /* Extensions not supported yet */
+    keyutil_extns[ext_keyUsage] = PR_FALSE;
+    keyutil_extns[ext_basicConstraint] = PR_FALSE;
+    keyutil_extns[ext_authorityKeyID] = PR_FALSE;
+    keyutil_extns[ext_subjectKeyID] = PR_FALSE;
+    keyutil_extns[ext_CRLDistPts] = PR_FALSE;
+    keyutil_extns[ext_NSCertType] = PR_FALSE;
+    keyutil_extns[ext_extKeyUsage] = PR_FALSE;
+    keyutil_extns[ext_authInfoAcc] = PR_FALSE;
+    keyutil_extns[ext_subjInfoAcc] = PR_FALSE;
+    keyutil_extns[ext_certPolicies] = PR_FALSE;
+    keyutil_extns[ext_policyMappings] = PR_FALSE;
+    keyutil_extns[ext_policyConstr] = PR_FALSE;
+    keyutil_extns[ext_inhibitAnyPolicy] = PR_FALSE;
+
     hashAlgTag = SEC_OID_MD5;
     
     /*  Make a cert request */
@@ -1510,7 +1531,7 @@ static int keyutil_main(
                  ascii,        /* ASCIIForIO */
                  NULL,         /* ExtendedEmailAddrs */
                  NULL,         /* ExtendedDNSNames */
-                 nullextnlist, /* certutil_extns */
+                 keyutil_extns, /* keyutil_extns */
                  outFile);
     
     PR_Close(outFile);
@@ -1562,7 +1583,7 @@ static int keyutil_main(
             "tempnickname", inFile, outFile,
             privkey, &pwdata, hashAlgTag,
             serialNumber, warpmonths, validityMonths,
-            NULL, NULL, ascii, PR_TRUE, NULL,
+            NULL, NULL, ascii, PR_TRUE, keyutil_extns,
             &cert);
          /*
           ExtendedEmailAddrs,ExtendedDNSNames,
@@ -1631,7 +1652,7 @@ shutdown:
     return rv == SECSuccess ? 0 : 255;
 }
 
-/* $Id: keyutil.c,v 1.11 2008/11/04 04:07:28 emaldonado Exp $ */
+/* $Id: keyutil.c,v 1.12 2008/11/04 04:28:22 emaldonado Exp $ */
 
 /* Key generation, encryption, and certificate utility code, based on
  * code from NSS's security utilities and the certutil application.  
