@@ -133,7 +133,7 @@ chmod -R u+w $RPM_BUILD_ROOT
 %changelog
 * Thu Jan 29 2009 Elio Maldonado <emaldona@redhat.com> - 2.4.1-9
 - certwatch: Fixed cert expiry time calculations (#473860)
-- keyutil: Fixed segfault on certificate generation (#473860)
+- keyutil: Fixed segfault on certificate generation (#479886)
 - genkey: Fixed key file name extension
 
 * Wed Jan 21 2009 Elio Maldonado <emaldona@redhat.com> - 2.4.1-8
