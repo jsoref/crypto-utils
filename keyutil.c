@@ -1304,8 +1304,10 @@ KeyOut(const char *keyoutfile,
             do {
                 
                 b64 = BTOA_ConvertItemToAscii(src);
-                if (b64)
-                	break;
+                if (!b64) {
+                    rc = 255;
+                	GEN_BREAK(rv);
+                }
                 
                 total = PL_strlen(b64);
                 
@@ -1468,6 +1470,12 @@ static int keyutil_main(
          * This is a certificate signing request for a new cert,
          * will generate a key pair
          */
+
+        if (!subjectstr) {
+            SECU_PrintError(progName, "subject string was NULL\n");
+            rv = 255;
+            goto shutdown;
+        }
         slot = PK11_GetInternalKeySlot(); /* PK11_GetInternalSlot() ? */
 
         privkey = GenerateRSAPrivateKey(keytype, slot,
@@ -1480,11 +1488,6 @@ static int keyutil_main(
             goto shutdown;
         }
 
-        if (!subjectstr) {
-            SECU_PrintError(progName, "subject string was NULL\n");
-            rv = 255;
-            goto shutdown;
-        }
         subject = CERT_AsciiToName((char *)subjectstr);
         if (!subject) {
             SECU_PrintError(progName,
@@ -1652,7 +1655,7 @@ shutdown:
     return rv == SECSuccess ? 0 : 255;
 }
 
-/* $Id: keyutil.c,v 1.12 2008/11/04 04:28:22 emaldonado Exp $ */
+/* $Id: keyutil.c,v 1.13 2009/01/29 22:54:38 emaldonado Exp $ */
 
 /* Key generation, encryption, and certificate utility code, based on
  * code from NSS's security utilities and the certutil application.  
