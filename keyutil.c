@@ -1221,8 +1221,8 @@ KeyOut(const char *keyoutfile,
     PRFileDesc *keyOutFile = NULL;
     PRUint32 total = 0;
     PRUint32 numBytes = 0;
-    SECItem *derEPKI = NULL;
-    SECItem derPKI = { 0, NULL, 0 };
+    SECItem *encryptedKeyDER = NULL;
+    SECItem clearKeyDER = { 0, NULL, 0 };
     SECItem pwitem = { 0, NULL, 0 };
     PRArenaPool *arenaForEPKI = NULL;
     PLArenaPool *arenaForPKI = NULL;
@@ -1268,9 +1268,9 @@ KeyOut(const char *keyoutfile,
 
         if (keyEncPwd) {
             /* NULL dest to let it allocate memory for us */
-            derEPKI = SEC_ASN1EncodeItem(arenaForEPKI, NULL, epki,
+            encryptedKeyDER = SEC_ASN1EncodeItem(arenaForEPKI, NULL, epki,
                 SECKEY_EncryptedPrivateKeyInfoTemplate);
-            if (!derEPKI) {
+            if (!encryptedKeyDER) {
                 rv = PR_GetError();
             	SECU_PrintError(progName, "ASN1 Encode failed (%s)\n",
                     SECU_Strerror(rv));
@@ -1285,19 +1285,19 @@ KeyOut(const char *keyoutfile,
                 GEN_BREAK(PR_OUT_OF_MEMORY_ERROR);
             }
 
-            derPKI.data = PORT_ArenaAlloc(arenaForPKI, epki->encryptedData.len);
-            derPKI.len = epki->encryptedData.len;
-            derPKI.type = siBuffer;
+            clearKeyDER.data = PORT_ArenaAlloc(arenaForPKI, epki->encryptedData.len);
+            clearKeyDER.len = epki->encryptedData.len;
+            clearKeyDER.type = siBuffer;
 
-            rv = DecryptKey(epki, algTag, &pwitem, pwdata, &derPKI);
-            if (rv) {
+            rv = DecryptKey(epki, algTag, &pwitem, pwdata, &clearKeyDER);
+            if (rv != SECSuccess) {
                 GEN_BREAK(rv);
             }
         }
 
         if (ascii) {
             /* we could be exporting a clear or encrypted key */
-            SECItem *src  = keyEncPwd ? derEPKI : &derPKI;
+            SECItem *src  = keyEncPwd ? encryptedKeyDER : &clearKeyDER;
             char *header  = keyEncPwd ? ENCRYPTED_KEY_HEADER : KEY_HEADER;
             char *trailer = keyEncPwd ? ENCRYPTED_KEY_TRAILER : KEY_TRAILER;
             char *b64 = NULL;
@@ -1331,18 +1331,18 @@ KeyOut(const char *keyoutfile,
         } else {
             if (keyEncPwd) {
             	/* Write out the encrypted key */
-                numBytes = PR_Write(keyOutFile, derEPKI, derEPKI->len);
+                numBytes = PR_Write(keyOutFile, encryptedKeyDER, encryptedKeyDER->len);
             } else {
             	/* Write out the unencrypted key */
-                numBytes = PR_Write(keyOutFile, &derPKI, derPKI.len);
-                if (numBytes != derEPKI->len) {
-                    printf("Wrote  %d bytes, instead of %d\n", numBytes, derPKI.len);
+                numBytes = PR_Write(keyOutFile, &clearKeyDER, clearKeyDER.len);
+                if (numBytes != clearKeyDER.len) {
+                    printf("Wrote  %d bytes, instead of %d\n", numBytes, clearKeyDER.len);
                 }
             }
         }
 
-        printf("Wrote %d bytes of encoded data to %s \n", numBytes, keyoutfile);
-        /* can we read it and reverse operations */
+        if (rv == SECSuccess)
+            printf("Wrote %d bytes of encoded data to %s \n", numBytes, keyoutfile);
 
     } while (0);
 
@@ -1560,7 +1560,6 @@ static int keyutil_main(
         LL_L2UI(serialNumber, now);
 
         privkey->wincx = &pwdata;
-        PR_Close(outFile);
 
         inFile  = PR_Open(certreqfile, PR_RDONLY, 0);
         assert(inFile);
@@ -1655,7 +1654,7 @@ shutdown:
     return rv == SECSuccess ? 0 : 255;
 }
 
-/* $Id: keyutil.c,v 1.14 2009/02/17 22:10:03 emaldonado Exp $ */
+/* $Id: keyutil.c,v 1.15 2009/02/17 22:20:20 emaldonado Exp $ */
 
 /* Key generation, encryption, and certificate utility code, based on
  * code from NSS's security utilities and the certutil application.
