@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 11
+Release: 14
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -131,7 +131,7 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
-* Thu Jan 29 2009 Elio Maldonado <emaldona@redhat.com> - 2.4.1-11
+* Fri Feb 20 2009 Elio Maldonado <emaldona@redhat.com> - 2.4.1-14
 - keyutil: Fixed bug where key pem file was not written (#473860)
 - keyutil: Fixed reverse logic that prevented output of the pem encoded key
 
