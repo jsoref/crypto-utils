@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 15
+Release: 16
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -131,7 +131,7 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
-* Fri Feb 26 2009 Elio Maldonado <emaldona@redhat.com> - 2.4.1-15
+* Fri Feb 26 2009 Elio Maldonado <emaldona@redhat.com> - 2.4.1-16
 - certwatch: Fixed cert expiry time calculations (#473860)
 - keyutil: Fixed segfault on certificate generation (#479886)
 - keyutil: Fixed errors that prevented output of pem cert and key files
