@@ -1243,7 +1243,9 @@ KeyOut(const char *keyoutfile,
              * key which we will decrypt.
              */
             rv = PK11_GenerateRandom(randomPassword, RAND_PASS_LEN);
-            if (rv != SECSuccess) GEN_BREAK(rv);
+            if (rv != SECSuccess) {
+                GEN_BREAK(rv);
+            }
             pwitem.data = randomPassword;
             pwitem.len = RAND_PASS_LEN;
             pwitem.type = siBuffer;
@@ -1654,7 +1656,7 @@ shutdown:
     return rv == SECSuccess ? 0 : 255;
 }
 
-/* $Id: keyutil.c,v 1.15 2009/02/17 22:20:20 emaldonado Exp $ */
+/* $Id: keyutil.c,v 1.16 2009/02/20 22:58:17 emaldonado Exp $ */
 
 /* Key generation, encryption, and certificate utility code, based on
  * code from NSS's security utilities and the certutil application.
