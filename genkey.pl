@@ -1521,7 +1521,7 @@ sub genCertWindow
     return "Skip" if $useca;
 
     $keyfile = $ssltop."/private/".$servername.".key";
-    $certfile = $ssltop."/certs/".$servername.".cert";
+    $certfile = $ssltop."/certs/".$servername.".crt";
     
     my $msg = "You are about to be asked to enter information that will be ".
 	"made into a self-signed certificate for your server. What you are ".
