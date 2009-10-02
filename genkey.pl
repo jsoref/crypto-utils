@@ -1086,7 +1086,8 @@ sub genRequestOpenSSL
     my $args = "-c genreq ";
     $args   .= "-g $bits "; 
     $args   .= "-s $subject ";
-    $args   .= "-v $months "; 
+    $args   .= "-v $months ";
+    $args   .= "-a ";              ## using ascii
     $args   .= "-o $csrfile ";
     $args   .= "-k $keyfile "; 
     $args   .= "-e $keyEncPassword " if $keyEncPassword;
@@ -1166,6 +1167,7 @@ sub renewCertOpenSSL
     # This is a request where we reuse the existing key pair
 
     my $args = "--command genreq ";
+    $args   .= "--ascii ";              ## using ascii
     $args   .= "--renew $certfile "; 
     $args   .= "--input $keyfile "; 
     $args   .= "--cacert " if $cacert;
