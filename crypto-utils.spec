@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 18
+Release: 19
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -131,6 +131,10 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Sun Oct 04 2009 Elio Maldonado<emaldona@redhat.com> - 2.4.1-19
+- Fix genkey to produce CSRs, certs, and key in ascii PEM format (#526720)
+- Fixed cert suffix to be .crt as Apache expects it (#162116)
+
 * Sun Mar 15 2009 Elio Maldonado <emaldona@redhat.com> - 2.4.1-18
 - certwatch: Fixed cert expiry time calculations (#473860)
 - keyutil: Fixed segfault on certificate generation and missing of key/cert pem files (#479886)
