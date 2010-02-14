@@ -29,7 +29,7 @@ test-certwatch: certwatch
 
 keyutil: keyutil.c keyutil.h certext.c secutil.c secutil.h secerror.c
 	gcc -Wall -Werror -O2 -g $^ -o $@ \
-		-lnspr4 -lnss3 -I/usr/include/nspr4 -I/usr/include/nss3
+		-lplc4 -lnspr4 -lnss3 -I/usr/include/nspr4 -I/usr/include/nss3
 	chmod 755 $@
 
 genkey: genkey.pl keyutil Makefile
