@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 23
+Release: 25
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -53,10 +53,10 @@ cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/nspr4 -I/usr/include/nss3 \
    $RPM_SOURCE_DIR/certext.c \
    $RPM_SOURCE_DIR/secutil.c \
    $RPM_SOURCE_DIR/secerror.c \
-   -o keyutil -lnspr4 -lnss3
+   -o keyutil -lplc4 -lnspr4 -lnss3
 
 cc $RPM_OPT_FLAGS -Wall -Werror \
-   $RPM_SOURCE_DIR/keyrand.c -o keyrand -lnewt
+   $RPM_SOURCE_DIR/keyrand.c -o keyrand -lnewt -lslang
 
 date +"%e %B %Y" | tr -d '\n' > date.xml
 echo -n %{version} > version.xml
@@ -131,6 +131,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Sat Feb 13 2010 Elio Maldonado <emaldona@redhat.com> - 2.4.1-25
+- Fix broken build due to change in implicit DSO Linking (#565064)
+
 * Thu Oct 01 2009 Elio Maldonado<emaldona@redhat.com> - 2.4.1-23
 - Fix genkey to produce CSRs, certs, and key in ascii PEM format (#526720)
 
