@@ -873,13 +873,11 @@ CreateCert(
     void                   *extHandle;
     SECItem                *certDER;
     PRArenaPool            *arena           = NULL;
-    SECItem                reqDER;
     CERTCertExtension      **CRexts;
     CERTCertificate        *subjectCert     = NULL;
     CERTCertificateRequest *certReq         = NULL;
     SECStatus               rv              = SECSuccess;
 
-    reqDER.data = NULL;
     do {
         arena = PORT_NewArena(DER_DEFAULT_CHUNKSIZE);
         if (!arena) {
@@ -1147,7 +1145,6 @@ SECStatus DecryptKey(
     do {
         SECAlgorithmID algid = epki->algorithm;
         CK_MECHANISM_TYPE cryptoMechType;
-        CK_MECHANISM cryptoMech;
         CK_ATTRIBUTE_TYPE operation = CKA_DECRYPT;
         PK11SlotInfo *slot = NULL;
 
@@ -1155,10 +1152,6 @@ SECStatus DecryptKey(
         if (cryptoMechType == CKM_INVALID_MECHANISM)  {
             ERROR_BREAK;
         }
-
-        cryptoMech.mechanism = PK11_GetPadMechanism(cryptoMechType);
-        cryptoMech.pParameter = cryptoParam ? cryptoParam->data : NULL;
-        cryptoMech.ulParameterLen = cryptoParam ? cryptoParam->len : 0;
 
         slot = PK11_GetBestSlot(cryptoMechType, NULL);
         if (!slot) {
