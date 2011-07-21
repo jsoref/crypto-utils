@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 30
+Release: 31
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -131,6 +131,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Thu Jul 21 2011 Petr Sabata <contyk@redhat.com> - 2.4.1-31
+- Perl mass rebuild
+
 * Thu Jun 23 2011 Elio Maldonado <emaldona@redhat.com> - 2.4.1-30
 - Enable building with -Werror=unused-but-set-variable flags (#716076)
 
