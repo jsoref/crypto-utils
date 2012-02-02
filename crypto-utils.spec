@@ -26,9 +26,8 @@ Source18: copying
 Group: Applications/System
 License: MIT and GPLv2+
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires: nss-devel, pkgconfig, newt-devel, xmlto
+BuildRequires: nss-devel >= 3.13.1, nss-util-devel >= 3.13.1, pkgconfig, newt-devel, xmlto
 BuildRequires: perl-devel, perl(Newt), perl(ExtUtils::MakeMaker)
-Requires: nss-devel >= 3.13.1, nss-util-devel >= 3.13.1
 Requires: perl(Newt), nss >= 3.13.1, nss-util >= 3.13.1
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Obsoletes: crypto-rand
