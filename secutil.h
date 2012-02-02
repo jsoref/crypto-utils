@@ -94,9 +94,6 @@ extern void SECU_PrintError(char *progName, char *msg, ...);
 /* print out a system error message */
 extern void SECU_PrintSystemError(char *progName, char *msg, ...);
 
-/* Return informative error string */
-extern const char * SECU_Strerror(PRErrorCode errNum);
-
 /* Read the contents of a file into a SECItem */
 extern SECStatus SECU_FileToItem(SECItem *dst, PRFileDesc *src);
 extern SECStatus SECU_TextFileToItem(SECItem *dst, PRFileDesc *src);

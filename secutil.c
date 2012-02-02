@@ -121,7 +121,7 @@ SECU_PrintErrMsg(FILE *out, int level, char *progName, char *msg, ...)
 {
     va_list args;
     PRErrorCode err = PORT_GetError();
-    const char * errString = SECU_Strerror(err);
+    const char * errString = PORT_ErrorToString(err);
 
     va_start(args, msg);
 
