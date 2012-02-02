@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 32
+Release: 33
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -18,7 +18,6 @@ Source9: pemutil.c
 Source10: keyutil.c
 Source11: certext.c
 Source12: secutil.c
-Source13: secerror.c
 Source14: keyutil.h
 Source15: secutil.h
 Source16: NSPRerrs.h
@@ -29,7 +28,8 @@ License: MIT and GPLv2+
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: nss-devel, pkgconfig, newt-devel, xmlto
 BuildRequires: perl-devel, perl(Newt), perl(ExtUtils::MakeMaker)
-Requires: perl(Newt), nss >= 3.12.2
+Requires: nss-devel >= 3.13.1, nss-util-devel >= 3.13.1
+Requires: perl(Newt), nss >= 3.13.1, nss-util >= 3.13.1
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Obsoletes: crypto-rand
 
@@ -52,7 +52,6 @@ cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/nspr4 -I/usr/include/nss3 \
    $RPM_SOURCE_DIR/keyutil.c \
    $RPM_SOURCE_DIR/certext.c \
    $RPM_SOURCE_DIR/secutil.c \
-   $RPM_SOURCE_DIR/secerror.c \
    -o keyutil -lplc4 -lnspr4 -lnss3
 
 cc $RPM_OPT_FLAGS -Wall -Werror \
@@ -131,6 +130,11 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Wed Feb 01 2012 Elio Maldonado <emaldona@redhat.com> - 2.4.1-33
+- Resolves: Bug 782142 - keyutil should use error string utilities provided by nss since 3.13
+- Update Requires and BuildRequires nss and nss-util mininimum versions
+- Add needed line breaks to the keyutil usage message 
+
 * Fri Jan 13 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.4.1-32
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
 
