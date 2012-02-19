@@ -4,7 +4,11 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 33
+Release: 34%{?dist}
+
+Group: Applications/System
+License: MIT and GPLv2+
+
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -23,14 +27,11 @@ Source15: secutil.h
 Source16: NSPRerrs.h
 Source17: SECerrs.h
 Source18: copying
-Group: Applications/System
-License: MIT and GPLv2+
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+
 BuildRequires: nss-devel >= 3.13.1, nss-util-devel >= 3.13.1, pkgconfig, newt-devel, xmlto
 BuildRequires: perl-devel, perl(Newt), perl(ExtUtils::MakeMaker)
 Requires: perl(Newt), nss >= 3.13.1, nss-util >= 3.13.1
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
-Obsoletes: crypto-rand
 
 %description
 This package provides tools for managing and generating
@@ -71,8 +72,6 @@ make
 popd
 
 %install
-rm -rf $RPM_BUILD_ROOT
-
 sed -n '1,/^ \*\/$/p' librand/qshs.c > LICENSE.librand
 cp -p $RPM_SOURCE_DIR/COPYING .
 
@@ -116,9 +115,6 @@ sed -e "s|^\$bindir.*$|\$bindir = \"%{_bindir}\";|" \
 
 chmod -R u+w $RPM_BUILD_ROOT
 
-%clean
-[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
-
 %files
 %defattr(-,root,root)
 %attr(0755,root,root) %{_bindir}/*
@@ -129,6 +125,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Sun Feb 19 2012 Peter Robinson <pbrobinson@fedoraproject.org> - 2.4.1-34
+- Add disttag, cleanup spec
+
 * Wed Feb 01 2012 Elio Maldonado <emaldona@redhat.com> - 2.4.1-33
 - Resolves: Bug 782142 - keyutil should use error string utilities provided by nss since 3.13
 - Update Requires and BuildRequires nss and nss-util mininimum versions
