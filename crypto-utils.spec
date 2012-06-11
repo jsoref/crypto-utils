@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 34%{?dist}
+Release: 35%{?dist}
 
 Group: Applications/System
 License: MIT and GPLv2+
@@ -125,6 +125,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Mon Jun 11 2012 Petr Pisar <ppisar@redhat.com> - 2.4.1-35
+- Perl 5.16 rebuild
+
 * Sun Feb 19 2012 Peter Robinson <pbrobinson@fedoraproject.org> - 2.4.1-34
 - Add disttag, cleanup spec
 
