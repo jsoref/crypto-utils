@@ -29,7 +29,7 @@ watch_files_certs()
 watch_database_certs() 
 {
     test -x /usr/bin/certutil || return 0
-    test -x /usr/lib/httpd/modules/libmodnss.so || return 0
+    test -x /etc/httpd/modules/libmodnss.so || return 0
     test -r /etc/httpd/conf.d/nss.conf || return 0
         
     # find path to mod_nss' database
