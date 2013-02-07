@@ -4,10 +4,10 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 37%{?dist}
+Release: 38%{?dist}
 
 Group: Applications/System
-License: MIT and GPLv2+
+License: MIT and GPLv2+ and MPLv1.0
 
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
@@ -45,24 +45,26 @@ SSL certificates and keys.
 make -C librand
 
 cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/nspr4 -I/usr/include/nss3 \
-   $RPM_SOURCE_DIR/certwatch.c $RPM_SOURCE_DIR/pemutil.c \
+   %{SOURCE2} %{SOURCE9} \
    -o certwatch -lnspr4 -lnss3
 
 cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/nspr4 -I/usr/include/nss3 \
-   $RPM_SOURCE_DIR/keyutil.c \
-   $RPM_SOURCE_DIR/certext.c \
-   $RPM_SOURCE_DIR/secutil.c \
+   %{SOURCE10} \
+   %{SOURCE11} \
+   %{SOURCE12} \
    -o keyutil -lplc4 -lnspr4 -lnss3
 
 cc $RPM_OPT_FLAGS -Wall -Werror \
-   $RPM_SOURCE_DIR/keyrand.c -o keyrand -lnewt -lslang
+   %{SOURCE6} -o keyrand -lnewt -lslang
 
 date +"%e %B %Y" | tr -d '\n' > date.xml
 echo -n %{version} > version.xml
 
+for m in %{SOURCE4} %{SOURCE5} %{SOURCE8}; do
+  cp ${m} .
+done
 for m in certwatch.xml genkey.xml keyrand.xml; do
-  cp $RPM_SOURCE_DIR/${m} .
-  xmlto man ${m} 
+  xmlto man ${m}
 done
 
 pushd Makerand
@@ -73,7 +75,7 @@ popd
 
 %install
 sed -n '1,/^ \*\/$/p' librand/qshs.c > LICENSE.librand
-cp -p $RPM_SOURCE_DIR/COPYING .
+cp -p %{SOURCE7} .
 
 pushd Makerand
 make install
@@ -94,7 +96,7 @@ install -c -m 755 keyrand $RPM_BUILD_ROOT%{_bindir}/keyrand
 
 # install certwatch
 install -c -m 755 certwatch $RPM_BUILD_ROOT%{_bindir}/certwatch
-install -c -m 755 $RPM_SOURCE_DIR/certwatch.cron \
+install -c -m 755 %{SOURCE3} \
    $RPM_BUILD_ROOT%{_sysconfdir}/cron.daily/certwatch
 for f in certwatch genkey keyrand; do 
    install -c -m 644 ${f}.1 $RPM_BUILD_ROOT%{_mandir}/man1/${f}.1
@@ -111,7 +113,7 @@ sed -e "s|^\$bindir.*$|\$bindir = \"%{_bindir}\";|" \
     -e "1s|.*|\#\!/usr/bin/perl|g" \
     -e "s/'Challenge',/'Email','Challenge',/g" \
     -e "/@EXTRA@/d" \
-  < $RPM_SOURCE_DIR/genkey.pl > $RPM_BUILD_ROOT%{_bindir}/genkey
+  < %{SOURCE1} > $RPM_BUILD_ROOT%{_bindir}/genkey
 
 chmod -R u+w $RPM_BUILD_ROOT
 
@@ -125,6 +127,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Thu Feb 07 2013 Jon Ciesla <limburgher@gmail.com> - 2.4.1-38
+- Merge review fixes, BZ 225666.
+
 * Thu Jan 17 2013 Elio Maldonado <emaldona@redhat.com> - 2.4.1-37
 - Fix Bug 883618 - certwatch cron job library path - multilib
 
@@ -200,7 +205,7 @@ chmod -R u+w $RPM_BUILD_ROOT
 * Mon Jan 05 2009 Elio Maldonado <emaldona@redhat.com> - 2.4.1-6
 - genkey: fix ca key name extension
 
-* Wed Dec 28 2008 Elio Maldonado <emaldona@redhat.com> - 2.4.1-5
+* Sun Dec 28 2008 Elio Maldonado <emaldona@redhat.com> - 2.4.1-5
 - genkey: fix server key name extension
 - certwatch: code cleanup
 
@@ -379,12 +384,12 @@ chmod -R u+w $RPM_BUILD_ROOT
 * Thu May 17 2001 Joe Orton <jorton@redhat.com>
 - Redone for Red Hat Linux.
 
-* Mon Mar 20 2001 Mark Cox <mjc@redhat.com>
+* Tue Mar 20 2001 Mark Cox <mjc@redhat.com>
 - Changes to make genkey a perl script
 
 * Mon Dec 04 2000 Joe Orton <jorton@redhat.com>
-- Put the stronghold/bin -> stronghold/ssl/bin symlink in the %files section
-  rather than creating it in %post.
+- Put the stronghold/bin -> stronghold/ssl/bin symlink in the %%files section
+  rather than creating it in %%post.
 
 * Fri Nov 24 2000 Mark Cox <mjc@redhat.com>
 - No need for .configure scripts, do the substitution ourselves
