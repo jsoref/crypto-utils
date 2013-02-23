@@ -43,6 +43,7 @@ $cadir = "$ssltop/CA";
 use Crypt::Makerand;
 use Newt;
 use Getopt::Long;
+use File::Temp qw/ tempfile /;
 
 sub InitRoot
 {
@@ -361,7 +362,7 @@ sub nssconfigFound {
     if (!$nssconf || !(-f $nssconf)) {
         # do an rpm query
         my $cmd = 'rpm -ql mod_nss';
-        my $tmplist = "list";
+        ($fh, $tmplist) = tempfile("list.XXXXXX");
         system("$cmd > $tmplist");
         $nssconf = `grep nss.conf $tmplist`;
         unlink($tmplist);
@@ -374,7 +375,7 @@ sub getModNSSDatabase {
    
     # Extract the value from the mod_nss configuration file.
     my $cmd ='/usr/bin/gawk \'/^NSSCertificateDatabase/ { print $2 }\'' . " $nssconf"; 
-    my $dbfile = "dbdirectory";
+    ($fh, $dbfile) = tempfile("dbdirectory.XXXXXX");
     system("$cmd > $dbfile");
     open(DIR, "<$dbfile");
     my $dbdir = '';
@@ -390,7 +391,7 @@ sub getNSSNickname {
 
     # Extract the value from the mod_nss configuration file.
     my $cmd ='/usr/bin/gawk \'/^NSSNickname/ { print $2 }\'' . " $nssconf";
-    my $nicknamefile = "nssnickname";
+    ($fh, $nicknamefile) = tempfile("nssnickname.XXXXXX");
     system("$cmd > $nicknamefile");
     open(NICK, "<$nicknamefile");  
     my $nickname = ''; 
@@ -404,7 +405,7 @@ sub getNSSDBPrefix {
 
     # Extract the value from the mod_nss configuration file.
     my $cmd ='/usr/bin/gawk \'/^NSSDBPrefix/ { print $2 }\'' . " $nssconf";
-    my $prefixfile = "dbprefix";
+    ($fh, $prefixfile) = tempfile("dbprefix.XXXXXX");
     system("$cmd > $prefixfile");
     open(PREFIX, "<$prefixfile");
     my $prefix = '';

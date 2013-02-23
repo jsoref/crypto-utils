@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 38%{?dist}
+Release: 39%{?dist}
 
 Group: Applications/System
 License: MIT and GPLv2+ and MPLv1.0
@@ -127,6 +127,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Sat Feb 23 2013 Elio Maldonado <emaldona@redhat.com> - 2.4.1-39
+- Resolves: rhbz#862430 - CVE-2012-3504 - insecure temporary file usage in genkey
+
 * Thu Feb 07 2013 Jon Ciesla <limburgher@gmail.com> - 2.4.1-38
 - Merge review fixes, BZ 225666.
 
