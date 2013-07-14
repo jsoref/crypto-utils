@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 39%{?dist}
+Release: 40%{?dist}
 
 Group: Applications/System
 License: MIT and GPLv2+ and MPLv1.0
@@ -30,7 +30,7 @@ Source18: copying
 
 BuildRequires: nss-devel >= 3.13.1, nss-util-devel >= 3.13.1, pkgconfig, newt-devel, xmlto
 BuildRequires: perl-devel, perl(Newt), perl(ExtUtils::MakeMaker)
-Requires: perl(Newt), nss >= 3.13.1, nss-util >= 3.13.1
+Requires: mod_nss, mod_ssl, perl(Newt), nss >= 3.13.1, nss-util >= 3.13.1
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 
 %description
@@ -127,6 +127,10 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Sun Jul 14 2013 Elio Maldonado <emaldona@redhat.com> - 2.4.1-40
+- Require mod_ssl and mod_nss, whose cert generation and renewal needs genkey supports
+- Resolves: rhbz#845942 - crypto-utils has a missing dependency on mod_ssl and fails to run
+
 * Sat Feb 23 2013 Elio Maldonado <emaldona@redhat.com> - 2.4.1-39
 - Resolves: rhbz#862430 - CVE-2012-3504 - insecure temporary file usage in genkey
 
