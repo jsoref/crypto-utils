@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 40%{?dist}
+Release: 41%{?dist}
 
 Group: Applications/System
 License: MIT and GPLv2+ and MPLv1.0
@@ -127,6 +127,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Thu Jul 18 2013 Petr Pisar <ppisar@redhat.com> - 2.4.1-41
+- Perl 5.18 rebuild
+
 * Sun Jul 14 2013 Elio Maldonado <emaldona@redhat.com> - 2.4.1-40
 - Require mod_ssl and mod_nss, whose cert generation and renewal needs genkey supports
 - Resolves: rhbz#845942 - crypto-utils has a missing dependency on mod_ssl and fails to run
