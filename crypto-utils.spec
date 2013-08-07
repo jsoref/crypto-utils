@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 42%{?dist}
+Release: 43%{?dist}
 
 Group: Applications/System
 License: MIT and GPLv2+ and MPLv1.0
@@ -32,6 +32,7 @@ BuildRequires: nss-devel >= 3.13.1, nss-util-devel >= 3.13.1, pkgconfig, newt-de
 BuildRequires: perl-devel, perl(Newt), perl(ExtUtils::MakeMaker)
 Requires: mod_nss, mod_ssl, perl(Newt), nss >= 3.13.1, nss-util >= 3.13.1
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
+Requires: crontabs
 
 %description
 This package provides tools for managing and generating
@@ -120,13 +121,18 @@ chmod -R u+w $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 %attr(0755,root,root) %{_bindir}/*
-%attr(0755,root,root) %{_sysconfdir}/cron.daily/certwatch
+%config(noreplace) %attr(0755,root,root) %{_sysconfdir}/cron.daily/certwatch
 %{_mandir}/man*/*
 %doc LICENSE* COPYING
 %{perl_vendorarch}/Crypt
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Wed Aug 07 2013 Pierre-Yves Chibon <pingou@pingoured.fr> - 2.4.1-43
+- Add a missing requirement on crontabs to spec file
+- Mark the cron job as config(noreplace)
+- Fix RHBZ#988609
+
 * Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.4.1-42
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
 
