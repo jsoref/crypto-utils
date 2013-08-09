@@ -4,11 +4,12 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 43%{?dist}
-
+Release: 44%{?dist}
 Group: Applications/System
-License: MIT and GPLv2+ and MPLv1.0
-
+# certwatch.c is GPLv2
+# pemutil.c etc are (MPLv1.1+ or GPLv2+ or LPGLv2+)
+# librand is MIT
+License: MIT and GPLv2 and (MPLv1.1+ or GPLv2+ or LPGLv2+)
 Source: crypto-rand-%{crver}.tar.gz
 Source1: genkey.pl
 Source2: certwatch.c
@@ -45,18 +46,24 @@ SSL certificates and keys.
 %configure --with-newt=%{_prefix} CFLAGS="$CFLAGS -fPIC"
 make -C librand
 
-cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/nspr4 -I/usr/include/nss3 \
-   %{SOURCE2} %{SOURCE9} \
-   -o certwatch -lnspr4 -lnss3
+mkdir srcs
+pushd srcs
+ for f in certwatch.c keyrand.c pemutil.c keyutil.c certext.c secutil.c \
+    keyutil.h secutil.h NSPRerrs.h SECerrs.h; do
+    cp -p $RPM_SOURCE_DIR/$f $f
+ done
 
-cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/nspr4 -I/usr/include/nss3 \
-   %{SOURCE10} \
-   %{SOURCE11} \
-   %{SOURCE12} \
+ cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/nspr4 -I/usr/include/nss3 \
+     certwatch.c pemutil.c \
+    -o certwatch -lnspr4 -lnss3
+
+ cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/nspr4 -I/usr/include/nss3 \
+     keyutil.c certext.c secutil.c \
    -o keyutil -lplc4 -lnspr4 -lnss3
 
-cc $RPM_OPT_FLAGS -Wall -Werror \
-   %{SOURCE6} -o keyrand -lnewt -lslang
+ cc $RPM_OPT_FLAGS -Wall -Werror \
+    keyrand.c -o keyrand -lnewt -lslang
+popd
 
 date +"%e %B %Y" | tr -d '\n' > date.xml
 echo -n %{version} > version.xml
@@ -93,10 +100,10 @@ mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/cron.daily \
          $RPM_BUILD_ROOT%{_bindir}
 
 # install keyrand
-install -c -m 755 keyrand $RPM_BUILD_ROOT%{_bindir}/keyrand
+install -c -m 755 srcs/keyrand $RPM_BUILD_ROOT%{_bindir}/keyrand
 
 # install certwatch
-install -c -m 755 certwatch $RPM_BUILD_ROOT%{_bindir}/certwatch
+install -c -m 755 srcs/certwatch $RPM_BUILD_ROOT%{_bindir}/certwatch
 install -c -m 755 %{SOURCE3} \
    $RPM_BUILD_ROOT%{_sysconfdir}/cron.daily/certwatch
 for f in certwatch genkey keyrand; do 
@@ -104,7 +111,7 @@ for f in certwatch genkey keyrand; do
 done
 
 # install keyutil
-install -c -m 755 keyutil $RPM_BUILD_ROOT%{_bindir}/keyutil
+install -c -m 755 srcs/keyutil $RPM_BUILD_ROOT%{_bindir}/keyutil
 
 # install genkey
 sed -e "s|^\$bindir.*$|\$bindir = \"%{_bindir}\";|" \
@@ -128,6 +135,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Fri Aug  9 2013 Joe Orton <jorton@redhat.com> - 2.4.1-44
+- fix License, fix debuginfo generation (#915705)
+
 * Wed Aug 07 2013 Pierre-Yves Chibon <pingou@pingoured.fr> - 2.4.1-43
 - Add a missing requirement on crontabs to spec file
 - Mark the cron job as config(noreplace)
