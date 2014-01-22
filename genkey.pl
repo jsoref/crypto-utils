@@ -526,8 +526,8 @@ EOT
     my $listbox = Newt::Listbox(5, 0);
     my $text = Newt::Textbox(70, 6, 0, $title);
     my @listitems = ("512 (insecure)",
-		     "1024 (medium-grade, fast speed) [RECOMMENDED]",
-		     "2048 (high-security, medium speed)",
+		     "1024 (medium-grade, fast speed)",
+		     "2048 (high-security, medium speed) [RECOMMENDED]",
 		     "4096 (paranoid-security, tortoise speed)",
 		     "Choose your own");
 
@@ -537,7 +537,7 @@ EOT
     $panel->Add(0, 1, $listbox, 0, 0, 1);
     $panel->Add(0, 2, NextBackCancelButton());
     
-    Newt::newtListboxSetCurrent($listbox->{co}, 1);
+    Newt::newtListboxSetCurrent($listbox->{co}, 2);
 
     $panel->Draw();
 

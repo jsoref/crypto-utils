@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 44%{?dist}
+Release: 45%{?dist}
 Group: Applications/System
 # certwatch.c is GPLv2
 # pemutil.c etc are (MPLv1.1+ or GPLv2+ or LPGLv2+)
@@ -135,6 +135,10 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Wed Jan 22 2014 Joe Orton <jorton@redhat.com> - 2.4.1-45
+- keyutil: use SHA1 as default hash in created certs (#921117)
+- genkey: default to 2048 bit keysize (#986788)
+
 * Fri Aug  9 2013 Joe Orton <jorton@redhat.com> - 2.4.1-44
 - fix License, fix debuginfo generation (#915705)
 

@@ -1522,7 +1522,7 @@ static int keyutil_main(
     keyutil_extns[ext_policyConstr] = PR_FALSE;
     keyutil_extns[ext_inhibitAnyPolicy] = PR_FALSE;
 
-    hashAlgTag = SEC_OID_MD5;
+    hashAlgTag = SEC_OID_SHA1;
 
     /*  Make a cert request */
     rv = CertReq(privkey, pubkey, rsaKey, hashAlgTag, subject,
