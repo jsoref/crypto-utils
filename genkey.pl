@@ -517,18 +517,17 @@ sub getkeysizeWindow()
     my $title= <<EOT;
 Choose the size of your key. The smaller the key you choose the faster
 your server response will be, but you'll have less security. Keys of
-less than 1024 bits are easily cracked.  Keys greater than 1024 bits
-don't work with all currently available browsers. 
+less than 1024 bits are easily cracked.
 
-We suggest you select the default, 1024 bits
+We suggest you select the default, 2048 bits.
 EOT
     my $panel = Newt::Panel(1, 3, "Choose key size");
     my $listbox = Newt::Listbox(5, 0);
     my $text = Newt::Textbox(70, 6, 0, $title);
     my @listitems = ("512 (insecure)",
-		     "1024 (medium-grade, fast speed)",
-		     "2048 (high-security, medium speed) [RECOMMENDED]",
-		     "4096 (paranoid-security, tortoise speed)",
+		     "1024 (low-grade, fast speed)",
+		     "2048 (medium-security, medium speed) [RECOMMENDED]",
+		     "4096 (high-security, slow speed)",
 		     "Choose your own");
 
     $listbox->Append(@listitems);
@@ -573,9 +572,8 @@ sub customKeySizeWindow()
 
     $title = <<EOT;
 Select the exact key size you want to use. Note that some browsers do
-not work correctly with arbitrary key sizes. For maximum compatibility
-you should use 512 or 1024, and for a reasonable level of security you
-should use 1024.
+not work correctly with arbitrary key sizes.  For a reasonable level
+of security you should use 2048.
 EOT
 
     $panel = Newt::Panel(1, 3, "Select exact key size");
