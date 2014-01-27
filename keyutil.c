@@ -270,7 +270,7 @@ static SECStatus nss_Init_Tokens(secuPWData *pwdata)
         if (SECSuccess != ret) {
             if (PR_GetError() == SEC_ERROR_BAD_PASSWORD) {
         	    SECU_PrintError(progName ? progName : "keyutil",
-        	    "%s: The password for token '%s' is incorrect\n",
+        	    "The password for token '%s' is incorrect\n",
         	    PK11_GetTokenName(slot));
             }
             status = SECFailure;
@@ -337,7 +337,7 @@ static SECStatus loadCert(
             cert = PK11_FindCertFromNickname((char *)nickname, NULL);
             if (!cert) {
             	SECU_PrintError(progName ? progName : "keyutil",
-                    "%s: Can't find cert named (%s), bailing out\n", nickname);
+                    "Can't find cert named (%s), bailing out\n", nickname);
                 rv = 255;
         	    break;
         	} else {
@@ -404,7 +404,7 @@ static SECStatus loadKey(
         rv = PK11_Authenticate(slot, PR_TRUE, pwdata);
         if (rv != SECSuccess) {
             SECU_PrintError(progName ? progName : "keyutil",
-                "Can't authenticate\n", PORT_ErrorToString(rv));
+                "Can't authenticate\n");
             break;
         }
 
@@ -1484,7 +1484,7 @@ static int keyutil_main(
             goto shutdown;
         }
 
-        subject = CERT_AsciiToName((char *)subjectstr);
+        subject = CERT_AsciiToName(subjectstr);
         if (!subject) {
             SECU_PrintError(progName,
                 "Improperly formatted name: \"%s\"\n", subjectstr);
@@ -1497,7 +1497,7 @@ static int keyutil_main(
     outFile = PR_Open(certreqfile, PR_RDWR | PR_CREATE_FILE | PR_TRUNCATE, 00660);
     if (!outFile) {
         SECU_PrintError(progName,
-               "%s -o: unable to open \"%s\" for writing (%ld, %ld)\n",
+               "-o: unable to open \"%s\" for writing (%d, %d)\n",
                certreqfile, PR_GetError(), PR_GetOSError());
         return 255;
     }
@@ -1560,7 +1560,7 @@ static int keyutil_main(
         inFile  = PR_Open(certreqfile, PR_RDONLY, 0);
         assert(inFile);
         if (!inFile) {
-            SECU_PrintError(progName, "Failed to open file \"%s\" (%ld, %ld) for reading.\n",
+            SECU_PrintError(progName, "Failed to open file \"%s\" (%d, %d) for reading.\n",
                   certreqfile, PR_GetError(), PR_GetOSError());
             rv = SECFailure;
             goto shutdown;
@@ -1568,7 +1568,7 @@ static int keyutil_main(
 
         outFile = PR_Open(certfile, PR_RDWR | PR_CREATE_FILE | PR_TRUNCATE, 00660);
         if (!outFile) {
-            SECU_PrintError(progName, "Failed to open file \"%s\" (%ld, %ld).\n",
+            SECU_PrintError(progName, "Failed to open file \"%s\" (%d, %d).\n",
                        certfile, PR_GetError(), PR_GetOSError());
             rv = SECFailure;
             goto    shutdown;
@@ -1588,8 +1588,8 @@ static int keyutil_main(
           ASCIIForIO,SelfSign,certutil_extns, thecert
          */
          if (rv) {
-             SECU_PrintError(progName, "Failed to create certificate \"%s\" (%ld).\n",
-                   outFile, PR_GetError());
+             SECU_PrintError(progName, "Failed to create certificate \"%s\" (%d).\n",
+                   certreqfile, PR_GetError());
              rv = SECFailure;
              goto shutdown;
          }
@@ -1680,6 +1680,8 @@ int main(int argc, char **argv)
     SECStatus status = 0;
     CommandType cmd = cmd_CertReq;
     PRBool initialized = PR_FALSE;
+
+    progName = argv[0];
 
     while ((optc = getopt_long(argc, argv, "atc:rs:g:v:e:f:d:z:i:p:o:k:h", options, NULL)) != -1) {
         switch (optc) {

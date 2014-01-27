@@ -89,10 +89,13 @@ extern char *SECU_NoPassword(PK11SlotInfo *slot, PRBool retry, void *arg);
 extern char *SECU_GetModulePassword(PK11SlotInfo *slot, PRBool retry, void *arg);
 
 /* print out an error message */
-extern void SECU_PrintError(char *progName, char *msg, ...);
+
+extern void SECU_PrintError(char *progName, char *msg, ...)
+    __attribute__((format(printf, 2, 3)));
 
 /* print out a system error message */
-extern void SECU_PrintSystemError(char *progName, char *msg, ...);
+extern void SECU_PrintSystemError(char *progName, char *msg, ...)
+    __attribute__((format(printf, 2, 3)));
 
 /* Read the contents of a file into a SECItem */
 extern SECStatus SECU_FileToItem(SECItem *dst, PRFileDesc *src);

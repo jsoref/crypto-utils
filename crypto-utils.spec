@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 46%{?dist}
+Release: 47%{?dist}
 Group: Applications/System
 # certwatch.c is GPLv2
 # pemutil.c etc are (MPLv1.1+ or GPLv2+ or LPGLv2+)
@@ -31,7 +31,7 @@ Source18: copying
 
 BuildRequires: nss-devel >= 3.13.1, nss-util-devel >= 3.13.1, pkgconfig, newt-devel, xmlto
 BuildRequires: perl-devel, perl(Newt), perl(ExtUtils::MakeMaker)
-Requires: mod_nss, mod_ssl, perl(Newt), nss >= 3.13.1, nss-util >= 3.13.1
+Requires: perl(Newt), nss >= 3.13.1, nss-util >= 3.13.1
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Requires: crontabs
 
@@ -53,11 +53,11 @@ pushd srcs
     cp -p $RPM_SOURCE_DIR/$f $f
  done
 
- cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/nspr4 -I/usr/include/nss3 \
+ cc $RPM_OPT_FLAGS -Wall -Werror=implicit-function-declaration -Werror -I/usr/include/nspr4 -I/usr/include/nss3 \
      certwatch.c pemutil.c \
     -o certwatch -lnspr4 -lnss3
 
- cc $RPM_OPT_FLAGS -Wall -Werror -I/usr/include/nspr4 -I/usr/include/nss3 \
+ cc $RPM_OPT_FLAGS -Wall -Werror=implicit-function-declaration -Werror -I/usr/include/nspr4 -I/usr/include/nss3 \
      keyutil.c certext.c secutil.c \
    -o keyutil -lplc4 -lnspr4 -lnss3
 
@@ -135,6 +135,12 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Mon Jan 27 2014 Joe Orton <jorton@redhat.com> - 2.4.1-47
+- genkey: escape passwords properly (#980859)
+- genkey: escape commas in subject (#803305)
+- keyutil: fix crashes when printing errors (#1045354)
+- drop requirement on mod_ssl/mod_nss again (#1057858)
+
 * Wed Jan 22 2014 Joe Orton <jorton@redhat.com> - 2.4.1-46
 - genkey: further tweaks to wording around key sizes
 

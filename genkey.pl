@@ -918,7 +918,9 @@ EOT
 
     return $ret if ($ret eq "Back" or $ret eq "Cancel");
 
-    $keyEncPassword = $pass1;
+    # FIXME: Ugly, should use perl system() correctly.
+    $pass1 =~ s/"/\\\"/g;
+    $keyEncPassword = "\"". $pass1. "\"";
 
     return "Next";
 }
@@ -1283,6 +1285,11 @@ sub getCertDetails
     $cert{'O'} = $ents{'O'}->Get();
     $cert{'OU'} = $ents{'OU'}->Get();
     $cert{'CN'} = $ents{'CN'}->Get();
+
+    # Escape commas
+    foreach my $part (keys %cert) {
+        $cert{$part} =~ s/,/\\\\,/g;
+    }
 
     # Build the subject from the details
     

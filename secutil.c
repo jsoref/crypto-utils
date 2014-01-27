@@ -116,14 +116,11 @@ SECU_GetString(int16 error_number)
     return errString;
 }
 
-void 
-SECU_PrintErrMsg(FILE *out, int level, char *progName, char *msg, ...)
+static void 
+SECU_PrintErrMsg(FILE *out, int level, char *progName, char *msg, va_list args)
 {
-    va_list args;
     PRErrorCode err = PORT_GetError();
     const char * errString = PORT_ErrorToString(err);
-
-    va_start(args, msg);
 
     SECU_Indent(out, level);
     fprintf(out, "%s: ", progName);
@@ -132,13 +129,15 @@ SECU_PrintErrMsg(FILE *out, int level, char *progName, char *msg, ...)
     fprintf(out, ": %s\n", errString);
     else
     fprintf(out, ": error %d\n", (int)err);
-
-    va_end(args);
 }
 
 void SECU_PrintError(char *progName, char *msg, ...)
 {
-    SECU_PrintErrMsg(stderr, 0, progName, msg);
+    va_list args;
+
+    va_start(args, msg);
+    SECU_PrintErrMsg(stderr, 0, progName, msg, args);
+    va_end(args);
 }
 
 #define INDENT_MULT 4
