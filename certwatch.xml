@@ -30,7 +30,7 @@
     <cmdsynopsis>
       <command>certwatch</command>
       <arg choice="opt">OPTION...</arg>
-      <arg choice="plain"><replaceable>filename</replaceable></arg>
+      <arg choice="plain"><replaceable>certname</replaceable></arg>
     </cmdsynopsis>
   </refsynopsisdiv>
   
@@ -41,8 +41,8 @@
     warning mail when an SSL certificate is about to expire.</para>
 
     <para>The program has two modes of operation: normal mode and
-    quiet mode.  In normal mode, the certificate given by the
-    <replaceable>filename</replaceable> argument is examined, and a
+    quiet mode.  In normal mode, the certificate identified by the
+    <replaceable>certname</replaceable> argument is examined, and a
     warning email is issued to standard output if the certificate is
     outside its validity period, or approaching expiry.  If the
     certificate cannot be found, or any errors occur whilst parsing
@@ -50,8 +50,13 @@
     produced.  In quiet mode, no output is given, but the exit status
     can still be used.</para>
     
-    <para>The certificate can be specified by its nickname or by a 
-    path to the containing file.</para>
+    <para>The certificate can be specified in one of two ways.  If the
+    <option>--configdir</option> option is used, the
+    <replaceable>certname</replaceable> parameter is used as a
+    nickname to identify a certificate within an NSS database.
+    Otherwise, the <replaceable>certname</replaceable> parameter is
+    treated as a filename containing a certificate in OpenSSL "PEM"
+    format.</para>
 
   </refsect1>
 
@@ -90,11 +95,29 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>--directory <replaceable>cert-directory</replaceable></option>,
+        <term><option>--configdir <replaceable>cert-directory</replaceable></option>,
         <option>-d <replaceable>cert-directory</replaceable></option></term>
 
         <listitem><simpara>Specify the database directory containing the certificate 
-        and key database files. The default is yet to be determined.</simpara></listitem>
+        and key database files.</simpara></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--certdbprefix <replaceable>prefix</replaceable></option>,
+        <option>-c <replaceable>prefix</replaceable></option></term>
+
+        <listitem><simpara>If <option>--configdir</option> is used,
+        specify the prefix used for the certificate database within
+        the database directory.</simpara></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--keydbprefix <replaceable>prefix</replaceable></option>,
+        <option>-c <replaceable>prefix</replaceable></option></term>
+
+        <listitem><simpara>If <option>--configdir</option> is used,
+        specify the prefix used for the key database within the
+        database directory.</simpara></listitem>
       </varlistentry>
 
     </variablelist>

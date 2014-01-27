@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 47%{?dist}
+Release: 48%{?dist}
 Group: Applications/System
 # certwatch.c is GPLv2
 # pemutil.c etc are (MPLv1.1+ or GPLv2+ or LPGLv2+)
@@ -135,6 +135,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Mon Jan 27 2014 Joe Orton <jorton@redhat.com> - 2.4.1-48
+- update certwatch man page (#618421)
+
 * Mon Jan 27 2014 Joe Orton <jorton@redhat.com> - 2.4.1-47
 - genkey: escape passwords properly (#980859)
 - genkey: escape commas in subject (#803305)
