@@ -342,18 +342,18 @@ sub NextBackCancelButton {
 
 # Require that this Apache module (mod_nss or mod_ssl) be installed
 sub requireModule {
-
-    my $module = $nss ? "mod_nss" : "mod_ssl";	
-    my $not_installed_msg = `rpm -q $module | grep "not installed"`;
+    if ($nss) {
+        my $not_installed_msg = `rpm -q mod_nss | grep "not installed"`;
 	
 	if ($not_installed_msg) {
-        Newt::newtWinMessage("Error", "Close", 
-        "$not_installed_msg".
-        "\nIt is required to generate this type of CSRs or certs".
-        "for this host:\n\nPress return to exit");
-        Newt::Finished();
-        exit 1;
-    }	
+            Newt::newtWinMessage("Error", "Close",
+                                 "$not_installed_msg".
+                                 "\nIt is required to generate this type of CSRs or certs ".
+                                 "for this host.\n\nPress return to exit");
+            Newt::Finished();
+            exit 1;
+        }
+    }
 }
 
 # Check that nss.conf exists

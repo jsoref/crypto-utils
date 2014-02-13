@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 51%{?dist}
+Release: 52%{?dist}
 Group: Applications/System
 # certwatch.c is GPLv2
 # pemutil.c etc are (MPLv1.1+ or GPLv2+ or LPGLv2+)
@@ -135,6 +135,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Thu Feb 13 2014 Joe Orton <jorton@redhat.com> - 2.4.1-52
+- genkey: only fail if --nss is specified and mod_nss is absent (#845942)
+
 * Thu Feb 13 2014 Joe Orton <jorton@redhat.com> - 2.4.1-51
 - certwatch: fix handling of files containing private keys
 
