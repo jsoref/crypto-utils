@@ -1075,7 +1075,10 @@ sub makeCertOpenSSL
            exit 1;
         }
     }
-    unlink($noisefile);
+    if ($noisefile) {
+        unlink($noisefile);
+        $noisefile = '';
+    }
 }
 
 # Create a certificate-signing request file that can be submitted to a 
@@ -1430,20 +1433,13 @@ sub genReqWindow
                           $subject, 730, $randfile, $tmpPasswordFile);
     }
     
-# Now make a temporary cert
 
-    if (!$genreq_mode) {
-	    if (!-f $certfile) {
-            if ($nss) {
-                makeCertNSS($certfile,
-                            $subject, $cert_days, $nssNickname,
-                            $randfile, $tmpPasswordFile); 
-            } else {
-                makeCertOpenSSL($keyfile,$certfile,
-                                $subject, $cert_days,
-                                $randfile, $tmpPasswordFile);
-            }
-        }
+    # Now make a temporary cert; skip for OpenSSL since it would
+    # overwrite the existing key.
+    if (!$genreq_mode && !-f $certfile && $nss) {
+        makeCertNSS($certfile,
+                    $subject, $cert_days, $nssNickname,
+                    $randfile, $tmpPasswordFile);
     }
     
     undef $csrtext;

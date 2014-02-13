@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 49%{?dist}
+Release: 50%{?dist}
 Group: Applications/System
 # certwatch.c is GPLv2
 # pemutil.c etc are (MPLv1.1+ or GPLv2+ or LPGLv2+)
@@ -135,6 +135,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Thu Feb 13 2014 Joe Orton <jorton@redhat.com> - 2.4.1-50
+- genkey: skip temporary cert generation for CSR case
+
 * Thu Feb 13 2014 Joe Orton <jorton@redhat.com> - 2.4.1-49
 - genkey: fix noise file handling
 
