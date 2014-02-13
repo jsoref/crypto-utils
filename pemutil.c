@@ -136,8 +136,10 @@ static SECStatus ReadDERFromFile(SECItem *der, PRFileDesc *inFile, PRBool ascii)
             return SECFailure;
         }
     
+        body = strstr(asc, "-----BEGIN CERTIFICATE");
+        if (!body) body = strstr(asc, "-----BEGIN X509 CERTIFICATE");
         /* check for headers and trailers and remove them */
-        if ((body = strstr(asc, "-----BEGIN")) != NULL) {
+        if (body) {
             char *trailer = NULL;
             asc = body;
             body = PORT_Strchr(body, '\n');
