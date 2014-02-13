@@ -979,7 +979,10 @@ sub makeCertNSS
     
     nssUtilCmd("$bindir/certutil", $args);
 
-    unlink($noisefile);
+    if ($noisefile) {
+        unlink($noisefile);
+        $noisefile = '';
+    }
     
     if ($certfile && !-f $certfile) {
         Newt::newtWinMessage("Error", "Close", 
@@ -1015,7 +1018,10 @@ sub genRequestNSS
     
     nssUtilCmd("$bindir/certutil", $args);
 
-    unlink($noisefile);
+    if ($noisefile) {
+        unlink($noisefile);
+        $noisefile = '';
+    }
     
     if (!-f $csrfile) {
         Newt::newtWinMessage("Error", "Close", 
@@ -1055,7 +1061,7 @@ sub makeCertOpenSSL
         Newt::newtWinMessage("Error", "Close", 
                  "Was not able to create a certificate for this ".
                  "host:\n\nPress return to exit");
-        unlink($noisefile);
+        unlink($noisefile) if $noisefile;
         Newt::Finished();
         exit 1;
     }
@@ -1065,7 +1071,7 @@ sub makeCertOpenSSL
                              "Could not set permissions of private key file.\n".
                              "$keyfile");
            Newt::Finished();
-           unlink($noisefile);
+           unlink($noisefile) if $noisefile;
            exit 1;
         }
     }
@@ -1098,7 +1104,10 @@ sub genRequestOpenSSL
  
     nssUtilCmd("$bindir/keyutil", $args);
          
-    unlink($noisefile);
+    if ($noisefile) {
+        unlink($noisefile);
+        $noisefile = '';
+    }
     Newt::Resume();
     
     if (!-f $csrfile) {
@@ -1175,10 +1184,10 @@ sub renewCertOpenSSL
     $args   .= "--filepwdnss $pwdfile " if $pwdfile;    
     $args   .= "--validity $months "; 
     $args   .= "--out $csrfile ";
- 
+    ### pass $noisefile?
+
     nssUtilCmd("$bindir/keyutil", $args);
          
-    unlink($noisefile);
     Newt::Resume();
     
     if (!-f $csrfile) {
