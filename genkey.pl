@@ -131,6 +131,7 @@ my $modNssDbDir = '';
 my $nssNickname = '';
 my $nssDBPrefix = '';
 my $gdb = '';
+my $hashalg = "SHA256";
 GetOptions('test|t' => \$test_mode, 
            'genreq' => \$genreq_mode,
            'days=i' => \$cert_days,
@@ -455,6 +456,22 @@ sub keyInDatabase {
     return $answer;
 }
 
+# Pick an appropriate hashing function for the key length
+# Ideally we should be able to depend on upstream behaviour and drop this,
+# but upstream's default was not changed from SHA-1 in a timely fashion:
+# https://bugzilla.mozilla.org/show_bug.cgi?id=1058933
+sub getHashForKeyLength {
+    use integer;
+    # See http://csrc.nist.gov/publications/nistpubs/800-131A/sp800-131A.pdf
+    # and http://csrc.nist.gov/publications/nistpubs/800-57/sp800-57_part1_rev3_general.pdf
+    $hashalg = "SHA256";
+    if ($bits > 7680) {
+        $hashalg = "SHA512";
+    } elsif ($bits > 3072) {
+        $hashalg = "SHA384";
+    }
+}
+
 ######################################################################
 # The window functions
 
@@ -556,6 +573,8 @@ EOT
 	    last;
 	}
     }
+    
+    getHashForKeyLength();
 
     $panel->Hide();
     undef $panel;
@@ -600,6 +619,8 @@ EOT
 	    $bits = 0;
 	}
     } while ($bits < $minbits || $bits > $maxbits);
+    
+    getHashForKeyLength();
     
     $panel->Hide();
     undef $panel;
@@ -976,6 +997,7 @@ sub makeCertNSS
     $args .= "-d $modNssDbDir "; 
     $args .= "-p $nssDBPrefix " if $nssDBPrefix;
     $args .= "-o $certfile " if $certfile;
+    $args .= "-Z $hashalg ";
     
     nssUtilCmd("$bindir/certutil", $args);
 
@@ -1015,6 +1037,7 @@ sub genRequestNSS
     $args .= "-v $months ";
     $args .= "-z $noisefile " if $noisefile;
     $args .= "-o $csrfile ";
+    $args .= "-Z $hashalg ";
     
     nssUtilCmd("$bindir/certutil", $args);
 
@@ -1155,6 +1178,7 @@ sub renewCertNSS
     $args   .= "-f $pwdfile "   if $pwdfile;
     $args   .= "-v $months ";
     $args   .= "-o $csrfile ";
+    $args   .= "-Z $hashalg ";
     
     nssUtilCmd("$bindir/certutil", $args);
     

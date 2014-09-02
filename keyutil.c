@@ -1522,7 +1522,22 @@ static int keyutil_main(
     keyutil_extns[ext_policyConstr] = PR_FALSE;
     keyutil_extns[ext_inhibitAnyPolicy] = PR_FALSE;
 
-    hashAlgTag = SEC_OID_SHA1;
+    /*
+     * Hash algorithm should be at least SHA-256 after 2013:
+     * http://csrc.nist.gov/publications/nistpubs/800-131A/sp800-131A.pdf
+     * Per http://csrc.nist.gov/publications/nistpubs/800-57/sp800-57_part1_rev3_general.pdf
+     * a 3072-bit key provides 128 bits of security and a 7680-bit key provides
+     * 192 bits of security, so when producing certificates that use keys
+     * longer than those lengths, we should use a correspondingly stronger
+     * hash algorithm
+     */
+    if (keysize > 7680) {
+        hashAlgTag = SEC_OID_SHA512;
+    } else if (keysize > 3072) {
+        hashAlgTag = SEC_OID_SHA384;
+    } else {
+        hashAlgTag = SEC_OID_SHA256;
+    }
 
     /*  Make a cert request */
     rv = CertReq(privkey, pubkey, rsaKey, hashAlgTag, subject,
