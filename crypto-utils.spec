@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 56%{?dist}
+Release: 57%{?dist}
 Group: Applications/System
 # certwatch.c is GPLv2
 # pemutil.c etc are (MPLv1.1+ or GPLv2+ or LPGLv2+)
@@ -135,6 +135,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Wed Sep 03 2014 Jitka Plesnikova <jplesnik@redhat.com> - 2.4.1-57
+- Perl 5.20 rebuild
+
 * Fri Aug 29 2014 Adam Williamson <awilliam@redhat.com> - 2.4.1-56
 - keyutil, genkey: use SHA-2 hashes by default for certs (#1062444)
 
