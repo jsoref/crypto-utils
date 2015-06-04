@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 57%{?dist}
+Release: 58%{?dist}
 Group: Applications/System
 # certwatch.c is GPLv2
 # pemutil.c etc are (MPLv1.1+ or GPLv2+ or LPGLv2+)
@@ -135,6 +135,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Thu Jun 04 2015 Jitka Plesnikova <jplesnik@redhat.com> - 2.4.1-58
+- Perl 5.22 rebuild
+
 * Wed Sep 03 2014 Jitka Plesnikova <jplesnik@redhat.com> - 2.4.1-57
 - Perl 5.20 rebuild
 
