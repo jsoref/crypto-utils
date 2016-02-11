@@ -673,7 +673,6 @@ CertReq(SECKEYPrivateKey *privk, SECKEYPublicKey *pubk, KeyType keyType,
     /* Encode request in specified format */
     if (ascii) {
         char *obuf;
-        char *name, *email, *org, *state, *country;
         SECItem *it;
         int total;
 
@@ -682,43 +681,19 @@ CertReq(SECKEYPrivateKey *privk, SECKEYPublicKey *pubk, KeyType keyType,
         obuf = BTOA_ConvertItemToAscii(it);
         total = PL_strlen(obuf);
 
-        name = CERT_GetCommonName(subject);
-        if (!name) {
-            name = strdup("(not specified)");
+        PR_fprintf(outFile, "%s\n", NS_CERTREQ_HEADER);
+        numBytes = PR_Write(outFile, obuf, total);
+        if (numBytes != total) {
+            SECU_PrintSystemError(progName, "write error");
+            return SECFailure;
         }
-
-        if (!phone)
-            phone = strdup("(not specified)");
-
-        email = CERT_GetCertEmailAddress(subject);
-        if (!email)
-            email = strdup("(not specified)");
-
-        org = CERT_GetOrgName(subject);
-        if (!org)
-            org = strdup("(not specified)");
-
-        state = CERT_GetStateName(subject);
-        if (!state)
-            state = strdup("(not specified)");
-
-	    country = CERT_GetCountryName(subject);
-	    if (!country)
-	        country = strdup("(not specified)");
-
-	    PR_fprintf(outFile, "%s\n", NS_CERTREQ_HEADER);
-	    numBytes = PR_Write(outFile, obuf, total);
-	    if (numBytes != total) {
-	        SECU_PrintSystemError(progName, "write error");
-	        return SECFailure;
-	    }
-	    PR_fprintf(outFile, "\n%s\n", NS_CERTREQ_TRAILER);
-	} else {
-	    numBytes = PR_Write(outFile, result.data, result.len);
-	    if (numBytes != (int)result.len) {
-	        SECU_PrintSystemError(progName, "write error");
-	        return SECFailure;
-	    }
+        PR_fprintf(outFile, "\n%s\n", NS_CERTREQ_TRAILER);
+    } else {
+        numBytes = PR_Write(outFile, result.data, result.len);
+        if (numBytes != (int)result.len) {
+            SECU_PrintSystemError(progName, "write error");
+            return SECFailure;
+        }
     }
     return SECSuccess;
 }

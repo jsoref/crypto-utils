@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 60%{?dist}
+Release: 61%{?dist}
 Group: Applications/System
 # certwatch.c is GPLv2
 # pemutil.c etc are (MPLv1.1+ or GPLv2+ or LPGLv2+)
@@ -135,6 +135,9 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Thu Feb 11 2016 Joe Orton <jorton@redhat.com> - 2.4.1-61
+- fix build failure with GCC 6 (#1306632)
+
 * Wed Feb 03 2016 Fedora Release Engineering <releng@fedoraproject.org> - 2.4.1-60
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
 
