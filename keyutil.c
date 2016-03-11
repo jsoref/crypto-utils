@@ -225,6 +225,7 @@ Usage(char *progName)
     fprintf(stderr, "{-o|--output} out-file         output file for a csr or cert\n");
     fprintf(stderr, "{-k|--keyfile} out-key-file    output key file, with csr or certgen\n");
     fprintf(stderr, "{-t|--cacert}                  indicates that cert renewal is for a ca\n");
+    fprintf(stderr, "{-a|--ascii}                   generate output in OpenSSL PEM format\n");
     fprintf(stderr, "{-h|--help}                    print this help message\n");
     fprintf(stderr, "\n");
     exit(1);
