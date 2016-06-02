@@ -1303,10 +1303,10 @@ KeyOut(const char *keyoutfile,
         } else {
             if (keyEncPwd) {
             	/* Write out the encrypted key */
-                numBytes = PR_Write(keyOutFile, encryptedKeyDER, encryptedKeyDER->len);
+                numBytes = PR_Write(keyOutFile, encryptedKeyDER->data, encryptedKeyDER->len);
             } else {
             	/* Write out the unencrypted key */
-                numBytes = PR_Write(keyOutFile, &clearKeyDER, clearKeyDER.len);
+                numBytes = PR_Write(keyOutFile, clearKeyDER.data, clearKeyDER.len);
                 if (numBytes != clearKeyDER.len) {
                     printf("Wrote  %d bytes, instead of %d\n", numBytes, clearKeyDER.len);
                 }
