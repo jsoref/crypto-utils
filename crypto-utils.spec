@@ -30,7 +30,7 @@ Source17: SECerrs.h
 Source18: copying
 
 BuildRequires: nss-devel >= 3.13.1, nss-util-devel >= 3.13.1, pkgconfig, newt-devel, xmlto
-BuildRequires: perl-devel, perl(Newt), perl(ExtUtils::MakeMaker)
+BuildRequires: perl-devel, perl-generators, perl(Newt), perl(ExtUtils::MakeMaker)
 Requires: perl(Newt), nss >= 3.13.1, nss-util >= 3.13.1
 Requires: %(eval `perl -V:version`; echo "perl(:MODULE_COMPAT_$version)")
 Requires: crontabs
