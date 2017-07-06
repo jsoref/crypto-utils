@@ -86,7 +86,7 @@
 
 #define GEN_BREAK(e) rv=e; break;
 
-/* CERT_EncodeSubjectKeyID is a private function decleared in <xconst.h> */
+/* CERT_EncodeSubjectKeyID is a private function declared in <xconst.h> */
 
 /* Begin From NSS's xconst.c */
 static const SEC_ASN1Template CERTSubjectKeyIDTemplate[] = {
