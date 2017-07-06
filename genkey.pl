@@ -772,7 +772,7 @@ sub moduleAccesPasswordWindow
     # either "module" or "key"
 
     my $message = <<EOT;
-At this stage you can provide the $what acess passphrase.
+At this stage you can provide the $what access passphrase.
 EOT
     $panel = Newt::Panel(1, 3, $what." access");
     $panel->Add(0, 0, Newt::Textbox(70, 5, 0, $message));
