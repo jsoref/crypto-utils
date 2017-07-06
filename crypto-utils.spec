@@ -4,7 +4,7 @@
 Summary: SSL certificate and key management utilities
 Name: crypto-utils
 Version: 2.4.1
-Release: 66%{?dist}
+Release: 67%{?dist}
 Group: Applications/System
 # certwatch.c is GPLv2
 # pemutil.c etc are (MPLv1.1+ or GPLv2+ or LPGLv2+)
@@ -122,6 +122,7 @@ sed -e "s|^\$bindir.*$|\$bindir = \"%{_bindir}\";|" \
     -e "s/'Challenge',/'Email','Challenge',/g" \
     -e "/@EXTRA@/d" \
   < %{SOURCE1} > $RPM_BUILD_ROOT%{_bindir}/genkey
+chmod 755 $RPM_BUILD_ROOT%{_bindir}/genkey
 
 chmod -R u+w $RPM_BUILD_ROOT
 
@@ -135,6 +136,10 @@ chmod -R u+w $RPM_BUILD_ROOT
 %{perl_vendorarch}/auto/Crypt
 
 %changelog
+* Thu Jul  6 2017 Joe Orton <jorton@redhat.com> - 2.4.1-67
+- fix build (#1431612)
+- fix Perl autoreqs (#1413917)
+
 * Sun Jun 04 2017 Jitka Plesnikova <jplesnik@redhat.com> - 2.4.1-66
 - Perl 5.26 rebuild
 

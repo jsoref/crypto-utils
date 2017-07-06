@@ -956,19 +956,19 @@ UpdateRNG(void)
     char meter[] = {
       "\r|                                                            |" };
 
-#define FPS fprintf(stderr,
-    FPS "\n");
-    FPS "A random seed must be generated that will be used in the\n");
-    FPS "creation of your key.  One of the easiest ways to create a\n");
-    FPS "random seed is to use the timing of keystrokes on a keyboard.\n");
-    FPS "\n");
-    FPS "To begin, type keys on the keyboard until this progress meter\n");
-    FPS "is full.  DO NOT USE THE AUTOREPEAT FUNCTION ON YOUR KEYBOARD!\n");
-    FPS "\n");
-    FPS "\n");
-    FPS "Continue typing until the progress meter is full:\n\n");
-    FPS meter);
-    FPS "\r|");
+#define FPS(s_) fputs(s_, stderr)
+    FPS("\n");
+    FPS("A random seed must be generated that will be used in the\n");
+    FPS("creation of your key.  One of the easiest ways to create a\n");
+    FPS("random seed is to use the timing of keystrokes on a keyboard.\n");
+    FPS("\n");
+    FPS("To begin, type keys on the keyboard until this progress meter\n");
+    FPS("is full.  DO NOT USE THE AUTOREPEAT FUNCTION ON YOUR KEYBOARD!\n");
+    FPS("\n");
+    FPS("\n");
+    FPS("Continue typing until the progress meter is full:\n\n");
+    FPS(meter);
+    FPS("\r|");
 
     /* turn off echo on stdin & return on 1 char instead of NL */
     fd = fileno(stdin);
@@ -994,20 +994,20 @@ UpdateRNG(void)
     randbuf[count] = c;
     if (count == 0 || c != randbuf[count-1]) {
         count++;
-        FPS "*");
+        FPS("*");
     }
     }
     PK11_RandomUpdate(randbuf, sizeof randbuf);
     memset(randbuf, 0, sizeof randbuf);
 
-    FPS "\n\n");
-    FPS "Finished.  Press enter to continue: ");
+    FPS("\n\n");
+    FPS("Finished.  Press enter to continue: ");
 
     while ((c = getc(stdin)) != '\n' && c != EOF)
         ;
     if (c == EOF)
     rv = -1;
-    FPS "\n");
+    FPS("\n");
 
 #undef FPS
 
