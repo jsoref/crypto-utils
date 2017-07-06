@@ -210,7 +210,7 @@ if (!$nss) {
     if (!$genreq_mode && keyInDatabase($nssNickname,$modNssDbDir) &&
         !$renew && !$overwrite_key) {
         Newt::newtWinMessage("Error", "Close", 
-		    "You already have a key file for this host in the datatabase:\n\n" .
+		    "You already have a key file for this host in the database:\n\n" .
 		    "$modNssDbDir" ." with nickname ". "$nssNickname" . "\n\n" .
 		    "This script will not overwrite an existing key.\n" . 
 		    "You will need to remove or rename the database in order to" .
