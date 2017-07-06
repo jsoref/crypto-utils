@@ -1399,7 +1399,7 @@ sub renewCert
 
     my $tempDbDir = "/tmp/nss.".$$;
 
-    # Get a comfirmation
+    # Get a confirmation
     my $msg = "You are about to issue a certificate renewal";
     my $panel = Newt::Panel(1, 2, "Certificate Renewal");
     $panel->Add(0, 0, 
