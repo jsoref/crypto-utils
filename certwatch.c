@@ -173,14 +173,14 @@ static int warning(FILE *out, const char *filename, const char *hostname,
         renew = 0;
         break;
     case secCertTimeExpired:
-        sprintf(subj, "has expired");
+        strcpy(subj, "has expired");
         break;
     case secCertTimeValid:
         days = diff_time_days(end, now);
         if (days == 0) {
             strcpy(subj, "will expire today");
         } else if (days == 1) {
-            sprintf(subj, "will expire tomorrow");
+            strcpy(subj, "will expire tomorrow");
         } else if (days < warn_period) {
             sprintf(subj, "will expire in %d days", days);
         } else {
