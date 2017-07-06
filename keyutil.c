@@ -212,7 +212,7 @@ Usage(char *progName)
 {
     fprintf(stderr, "Usage: %s [options] arguments\n", progName);
     fprintf(stderr, "{-c|--command} command, one of [genreq|makecert]\n");
-    fprintf(stderr, "{-r|--renew} cert-to-renew     the file with the certifificast to renew\n");
+    fprintf(stderr, "{-r|--renew} cert-to-renew     the file with the certificates to renew\n");
     fprintf(stderr, "{-s|--subject} subject         subject distinguished name");
     fprintf(stderr, "{-g|--gsize} key_size          size in bitsof the rsa key to generate\n");
     fprintf(stderr, "{-v|--validity} months         cert validity in months");
