@@ -315,7 +315,7 @@ int main(int argc, char **argv)
         { "configdir", required_argument, NULL, 'd' },
         { "passwordfile", required_argument, NULL, 'w' },
         { "certdbprefix", required_argument, NULL, 'c' },
-        { "keydbprexix", required_argument, NULL, 'k' },
+        { "keydbprefix", required_argument, NULL, 'k' },
         { NULL }
     };
     char *certDBPrefix = "";
