@@ -1486,7 +1486,7 @@ sub genReqWindow
 	print <<EOT;
 You now need to connect to the VeriSign site and submit your CSR. The
 page at https://digitalid.verisign.com/server/help/hlpEnrollServer.htm
-explains how to do this, and what additional documention will be
+explains how to do this, and what additional documentation will be
 required before VeriSign can sign your certificate.
 
 Your CSR is given below. To submit it to VeriSign, go through the
@@ -1502,7 +1502,7 @@ EOT
 	print <<EOT;
 You now need to connect to the Thawte site and submit your CSR. The
 page at https://www.thawte.com/certs/server/request.html explains how
-to do this, and what additional documention will be required before
+to do this, and what additional documentation will be required before
 Thawte can sign your certificate.
 
 Your CSR is given below. To submit it to Thawte, go to
@@ -1518,7 +1518,7 @@ EOT
 	print <<EOT;
 You now need to connect to the Equifax site and submit your CSR. The
 page at http://www.equifaxsecure.com/ebusinessid/c2net/ explains how
-to do this, and what additional documention will be required before
+to do this, and what additional documentation will be required before
 Equifax can sign your certificate.
 
 Your CSR is given below. To submit it to Equifax, go to
