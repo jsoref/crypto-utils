@@ -763,7 +763,7 @@ sub savePassword
 }
 
 # Prompts for a module or key access password.
-# The argument indicates wheter the password is to
+# The argument indicates whether the password is to
 # access the nss module access or for access to the key
 # to be loaded from a pem file into a PEM module token.
 sub moduleAccesPasswordWindow
